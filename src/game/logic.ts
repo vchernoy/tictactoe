@@ -8,14 +8,22 @@ export function getWinLength(size: number): number {
   return Math.min(size, size <= 4 ? size : 4);
 }
 
-export function getDefaultLiveMarkCount(size: number): number {
-  if (size <= 3) return 2;
-  if (size <= 4) return 3;
-  return 4;
+export function getLiveMarkMin(_size: number, winLength: number): number {
+  return winLength;
 }
 
-export function getLiveMarkCap(size: number, winLength: number): number {
-  return Math.min(size - 1, winLength, 5);
+export function getLiveMarkMax(size: number): number {
+  return Math.ceil((size * size) / 2);
+}
+
+export function getDefaultLiveMarkCount(_size: number, winLength: number): number {
+  return winLength;
+}
+
+export function clampLiveMarkCount(k: number, size: number, winLength: number): number {
+  const minK = getLiveMarkMin(size, winLength);
+  const maxK = getLiveMarkMax(size);
+  return Math.min(Math.max(k, minK), maxK);
 }
 
 export function createGameState(config: GameConfig, firstPlayer: Player): GameState {
@@ -23,7 +31,11 @@ export function createGameState(config: GameConfig, firstPlayer: Player): GameSt
     config.variant === 'limited'
       ? {
           ...config,
-          liveMarkCount: config.liveMarkCount ?? getDefaultLiveMarkCount(config.size),
+          liveMarkCount: clampLiveMarkCount(
+            config.liveMarkCount ?? getDefaultLiveMarkCount(config.size, config.winLength),
+            config.size,
+            config.winLength,
+          ),
         }
       : config;
 
@@ -152,7 +164,8 @@ export function applyMove(state: GameState, move: Move): GameState {
 
   if (state.config.variant === 'limited') {
     const liveMarkCount =
-      state.config.liveMarkCount ?? getDefaultLiveMarkCount(state.config.size);
+      state.config.liveMarkCount ??
+      getDefaultLiveMarkCount(state.config.size, state.config.winLength);
 
     const immediateWinner = checkWinner(board, state.config.winLength, state.config.variant);
     if (immediateWinner) {

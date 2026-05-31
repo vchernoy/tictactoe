@@ -1,4 +1,8 @@
-import { getLiveMarkCap, getWinLength } from '../game/logic';
+import {
+  getLiveMarkMax,
+  getLiveMarkMin,
+  getWinLength,
+} from '../game/logic';
 import type { AiDifficulty, GameMode, GameVariant } from '../game/types';
 
 interface GameSetupProps {
@@ -22,7 +26,10 @@ const DIFFICULTIES: { id: AiDifficulty; name: string; desc: string }[] = [
 ];
 
 const SIZES = [3, 4, 5, 6, 7, 8];
-const LIVE_MARK_OPTIONS = [2, 3, 4, 5];
+
+function getLiveMarkOptions(minK: number, maxK: number): number[] {
+  return Array.from({ length: maxK - minK + 1 }, (_, i) => minK + i);
+}
 
 function getWinHint(size: number, variant: GameVariant): string {
   const n = size <= 4 ? size : 4;
@@ -52,7 +59,11 @@ export function GameSetup({
   onLiveMarkCountChange,
   onStart,
 }: GameSetupProps) {
-  const liveMarkCap = getLiveMarkCap(size, getWinLength(size));
+  const winLength = getWinLength(size);
+  const minK = getLiveMarkMin(size, winLength);
+  const maxK = getLiveMarkMax(size);
+  const liveMarkOptions = getLiveMarkOptions(minK, maxK);
+  const useLiveMarkSelect = liveMarkOptions.length > 8;
 
   return (
     <div className="setup-panel">
@@ -141,20 +152,38 @@ export function GameSetup({
       {variant === 'limited' && (
         <div className="setup-section">
           <label className="setup-label">Live Mark Count (K)</label>
-          <div className="live-mark-grid">
-            {LIVE_MARK_OPTIONS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                className={`live-mark-btn ${liveMarkCount === k ? 'active' : ''}`}
-                disabled={k > liveMarkCap}
-                onClick={() => onLiveMarkCountChange(k)}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-          <p className="setup-hint">Each player keeps their last K marks; oldest disappears.</p>
+          {useLiveMarkSelect ? (
+            <select
+              className="live-mark-select"
+              value={liveMarkCount}
+              onChange={(e) => onLiveMarkCountChange(Number(e.target.value))}
+            >
+              {liveMarkOptions.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div
+              className="live-mark-grid"
+              style={{ gridTemplateColumns: `repeat(${Math.min(liveMarkOptions.length, 4)}, 1fr)` }}
+            >
+              {liveMarkOptions.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={`live-mark-btn ${liveMarkCount === k ? 'active' : ''}`}
+                  onClick={() => onLiveMarkCountChange(k)}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="setup-hint">
+            Each player keeps their last K marks (K = {minK} … {maxK}). Oldest disappears.
+          </p>
         </div>
       )}
 

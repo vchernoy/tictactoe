@@ -5,9 +5,11 @@ import { GameSetup } from './components/GameSetup';
 import { getComputerMove } from './game/ai';
 import {
   applyMove,
+  clampLiveMarkCount,
   createGameState,
   getDefaultLiveMarkCount,
-  getLiveMarkCap,
+  getLiveMarkMax,
+  getLiveMarkMin,
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
@@ -80,7 +82,9 @@ export default function App() {
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
   const [variant, setVariant] = useState<GameVariant>('standard');
-  const [liveMarkCount, setLiveMarkCount] = useState(getDefaultLiveMarkCount(3));
+  const [liveMarkCount, setLiveMarkCount] = useState(
+    getDefaultLiveMarkCount(3, getWinLength(3)),
+  );
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -88,15 +92,18 @@ export default function App() {
 
   const handleSizeChange = useCallback((newSize: number) => {
     setSize(newSize);
-    const cap = getLiveMarkCap(newSize, getWinLength(newSize));
-    setLiveMarkCount(Math.min(getDefaultLiveMarkCount(newSize), cap));
+    const winLength = getWinLength(newSize);
+    const minK = getLiveMarkMin(newSize, winLength);
+    const maxK = getLiveMarkMax(newSize);
+    const defaultK = getDefaultLiveMarkCount(newSize, winLength);
+    setLiveMarkCount((prev) => (prev < minK || prev > maxK ? defaultK : prev));
   }, []);
 
   const handleVariantChange = useCallback((newVariant: GameVariant) => {
     setVariant(newVariant);
     if (newVariant === 'limited') {
-      const cap = getLiveMarkCap(size, getWinLength(size));
-      setLiveMarkCount(Math.min(getDefaultLiveMarkCount(size), cap));
+      const winLength = getWinLength(size);
+      setLiveMarkCount(getDefaultLiveMarkCount(size, winLength));
     }
   }, [size]);
 
@@ -110,13 +117,16 @@ export default function App() {
   }, []);
 
   const handleAcceptFirst = useCallback(() => {
+    const winLength = getWinLength(size);
     const config: GameConfig = {
       size,
       mode,
-      winLength: getWinLength(size),
+      winLength,
       variant,
       aiDifficulty: mode === 'pvc' ? aiDifficulty : 'medium',
-      ...(variant === 'limited' ? { liveMarkCount } : {}),
+      ...(variant === 'limited'
+        ? { liveMarkCount: clampLiveMarkCount(liveMarkCount, size, winLength) }
+        : {}),
     };
     setGameState(createGameState(config, suggestedFirst));
     setPhase('playing');
@@ -238,7 +248,7 @@ export default function App() {
                 )}
                 {gameState.config.variant === 'limited' && (
                   <span className="meta-badge limited">
-                    Limited · K={gameState.config.liveMarkCount ?? getDefaultLiveMarkCount(gameState.config.size)}
+                    Limited · K={gameState.config.liveMarkCount ?? getDefaultLiveMarkCount(gameState.config.size, gameState.config.winLength)}
                   </span>
                 )}
               </div>
