@@ -214,7 +214,7 @@
 
 .variant-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
 }
 
@@ -435,6 +435,44 @@
   background: rgba(255, 107, 107, 0.08);
 }
 
+.meta-badge.limited {
+  border: 1px solid rgba(255, 193, 107, 0.35);
+  color: #ffc16b;
+  background: rgba(255, 193, 107, 0.08);
+}
+
+.live-mark-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.live-mark-btn {
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all var(--transition);
+}
+
+.live-mark-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.live-mark-btn.active {
+  border-color: #ffc16b;
+  background: rgba(255, 193, 107, 0.1);
+  color: #ffc16b;
+}
+
+.live-mark-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .status {
   font-size: 1.25rem;
   font-weight: 500;
@@ -551,6 +589,19 @@
   box-shadow: inset 0 0 20px var(--accent-glow-o);
 }
 
+.cell-expiring {
+  animation: markFadeOut 0.45s ease forwards;
+}
+
+.cell-expiring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: inherit;
+  animation: fadeOut 0.45s ease forwards;
+}
+
 /* Game Actions */
 .game-actions {
   display: flex;
@@ -634,9 +685,23 @@
   to { transform: scale(1.05); }
 }
 
+@keyframes markFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0.4; transform: scale(0.92); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .mode-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .variant-toggle {
     grid-template-columns: 1fr;
   }
 

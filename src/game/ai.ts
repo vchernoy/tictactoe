@@ -213,7 +213,7 @@ function getComputerMoveHard(state: GameState, aiPlayer: Player): Move {
     if (immediate === aiPlayer) return move;
   }
 
-  if (variant === 'standard') {
+  if (variant !== 'misere') {
     for (const move of moves) {
       const testState = { ...state, currentPlayer: aiPlayer };
       const afterAi = applyMove(testState, move);

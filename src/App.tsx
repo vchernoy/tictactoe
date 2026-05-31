@@ -6,6 +6,8 @@ import { getComputerMove } from './game/ai';
 import {
   applyMove,
   createGameState,
+  getDefaultLiveMarkCount,
+  getLiveMarkCap,
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
@@ -78,10 +80,29 @@ export default function App() {
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
   const [variant, setVariant] = useState<GameVariant>('standard');
+  const [liveMarkCount, setLiveMarkCount] = useState(getDefaultLiveMarkCount(3));
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
+
+  const handleSizeChange = useCallback((newSize: number) => {
+    setSize(newSize);
+    const cap = getLiveMarkCap(newSize, getWinLength(newSize));
+    setLiveMarkCount(Math.min(getDefaultLiveMarkCount(newSize), cap));
+  }, []);
+
+  const handleVariantChange = useCallback((newVariant: GameVariant) => {
+    setVariant(newVariant);
+    if (newVariant === 'limited') {
+      const cap = getLiveMarkCap(size, getWinLength(size));
+      setLiveMarkCount(Math.min(getDefaultLiveMarkCount(size), cap));
+    }
+  }, [size]);
+
+  const handleLiveMarkCountChange = useCallback((count: number) => {
+    setLiveMarkCount(count);
+  }, []);
 
   const handleStart = useCallback(() => {
     setSuggestedFirst(suggestFirstPlayer());
@@ -95,10 +116,11 @@ export default function App() {
       winLength: getWinLength(size),
       variant,
       aiDifficulty: mode === 'pvc' ? aiDifficulty : 'medium',
+      ...(variant === 'limited' ? { liveMarkCount } : {}),
     };
     setGameState(createGameState(config, suggestedFirst));
     setPhase('playing');
-  }, [size, mode, variant, aiDifficulty, suggestedFirst]);
+  }, [size, mode, variant, aiDifficulty, liveMarkCount, suggestedFirst]);
 
   const handleReroll = useCallback(() => {
     setSuggestedFirst(suggestFirstPlayer());
@@ -120,6 +142,14 @@ export default function App() {
     },
     [gameState, mode, isAiThinking],
   );
+
+  useEffect(() => {
+    if (!gameState?.expiredCell) return;
+    const timer = setTimeout(() => {
+      setGameState((prev) => (prev ? { ...prev, expiredCell: null } : prev));
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [gameState?.expiredCell]);
 
   useEffect(() => {
     if (!gameState || gameState.status !== 'playing' || mode !== 'pvc') return;
@@ -168,10 +198,12 @@ export default function App() {
             size={size}
             mode={mode}
             variant={variant}
-            onSizeChange={setSize}
-            onModeChange={setMode}
-            onVariantChange={setVariant}
             aiDifficulty={aiDifficulty}
+            liveMarkCount={liveMarkCount}
+            onSizeChange={handleSizeChange}
+            onModeChange={setMode}
+            onVariantChange={handleVariantChange}
+            onLiveMarkCountChange={handleLiveMarkCountChange}
             onAiDifficultyChange={setAiDifficulty}
             onStart={handleStart}
           />
@@ -204,6 +236,11 @@ export default function App() {
                 {gameState.config.variant === 'misere' && (
                   <span className="meta-badge misere">Misère</span>
                 )}
+                {gameState.config.variant === 'limited' && (
+                  <span className="meta-badge limited">
+                    Limited · K={gameState.config.liveMarkCount ?? getDefaultLiveMarkCount(gameState.config.size)}
+                  </span>
+                )}
               </div>
               <p className={`status ${gameState.winner ? 'status-finished' : ''} ${isAiThinking ? 'status-thinking' : ''}`}>
                 {getStatusMessage(gameState, mode)}
@@ -222,6 +259,7 @@ export default function App() {
             <GameBoard
               board={gameState.board}
               winningCells={gameState.winningCells}
+              expiredCell={gameState.expiredCell}
               onCellClick={handleCellClick}
               disabled={gameState.status === 'finished' || isAiThinking}
             />

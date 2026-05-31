@@ -1,9 +1,10 @@
 import { Cell } from './Cell';
-import type { Board } from '../game/types';
+import type { Board, Move } from '../game/types';
 
 interface BoardProps {
   board: Board;
   winningCells: [number, number][];
+  expiredCell: Move | null;
   onCellClick: (row: number, col: number) => void;
   disabled: boolean;
 }
@@ -12,7 +13,11 @@ function isWinningCell(winningCells: [number, number][], row: number, col: numbe
   return winningCells.some(([r, c]) => r === row && c === col);
 }
 
-export function GameBoard({ board, winningCells, onCellClick, disabled }: BoardProps) {
+function isExpiredCell(expiredCell: Move | null, row: number, col: number): boolean {
+  return expiredCell?.row === row && expiredCell?.col === col;
+}
+
+export function GameBoard({ board, winningCells, expiredCell, onCellClick, disabled }: BoardProps) {
   const size = board.length;
 
   return (
@@ -31,6 +36,7 @@ export function GameBoard({ board, winningCells, onCellClick, disabled }: BoardP
             row={r}
             col={c}
             isWinning={isWinningCell(winningCells, r, c)}
+            isExpiring={isExpiredCell(expiredCell, r, c)}
             onClick={onCellClick}
             disabled={disabled}
             size={size}

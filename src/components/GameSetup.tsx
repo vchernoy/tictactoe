@@ -1,3 +1,4 @@
+import { getLiveMarkCap, getWinLength } from '../game/logic';
 import type { AiDifficulty, GameMode, GameVariant } from '../game/types';
 
 interface GameSetupProps {
@@ -5,10 +6,12 @@ interface GameSetupProps {
   mode: GameMode;
   variant: GameVariant;
   aiDifficulty: AiDifficulty;
+  liveMarkCount: number;
   onSizeChange: (size: number) => void;
   onModeChange: (mode: GameMode) => void;
   onVariantChange: (variant: GameVariant) => void;
   onAiDifficultyChange: (difficulty: AiDifficulty) => void;
+  onLiveMarkCountChange: (count: number) => void;
   onStart: () => void;
 }
 
@@ -19,11 +22,17 @@ const DIFFICULTIES: { id: AiDifficulty; name: string; desc: string }[] = [
 ];
 
 const SIZES = [3, 4, 5, 6, 7, 8];
+const LIVE_MARK_OPTIONS = [2, 3, 4, 5];
 
 function getWinHint(size: number, variant: GameVariant): string {
   const n = size <= 4 ? size : 4;
   if (variant === 'misere') {
     return `Avoid ${n} in a row — whoever completes a line loses`;
+  }
+  if (variant === 'limited') {
+    return size <= 4
+      ? `Win by getting ${size} in a row — marks expire after K moves`
+      : `Win by getting 4 in a row on a ${size}×${size} board — marks expire after K moves`;
   }
   return size <= 4
     ? `Win by getting ${size} in a row`
@@ -39,8 +48,12 @@ export function GameSetup({
   onVariantChange,
   aiDifficulty,
   onAiDifficultyChange,
+  liveMarkCount,
+  onLiveMarkCountChange,
   onStart,
 }: GameSetupProps) {
+  const liveMarkCap = getLiveMarkCap(size, getWinLength(size));
+
   return (
     <div className="setup-panel">
       <h2 className="setup-title">Choose Your Game</h2>
@@ -107,13 +120,43 @@ export function GameSetup({
             <span className="variant-name">Misère</span>
             <span className="variant-desc">Completing a line loses</span>
           </button>
+          <button
+            type="button"
+            className={`variant-btn ${variant === 'limited' ? 'active' : ''}`}
+            onClick={() => onVariantChange('limited')}
+          >
+            <span className="variant-name">Limited</span>
+            <span className="variant-desc">Only K marks on board</span>
+          </button>
         </div>
         <p className="setup-hint variant-hint">
           {variant === 'misere'
             ? 'Misère: the player who gets N in a row loses. Draws still happen when the board fills with no line.'
-            : 'Standard: first player to get N in a row wins.'}
+            : variant === 'limited'
+              ? 'Limited: standard N-in-a-row wins, but each player keeps only their last K marks. Misère rules do not apply in this mode.'
+              : 'Standard: first player to get N in a row wins.'}
         </p>
       </div>
+
+      {variant === 'limited' && (
+        <div className="setup-section">
+          <label className="setup-label">Live Mark Count (K)</label>
+          <div className="live-mark-grid">
+            {LIVE_MARK_OPTIONS.map((k) => (
+              <button
+                key={k}
+                type="button"
+                className={`live-mark-btn ${liveMarkCount === k ? 'active' : ''}`}
+                disabled={k > liveMarkCap}
+                onClick={() => onLiveMarkCountChange(k)}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+          <p className="setup-hint">Each player keeps their last K marks; oldest disappears.</p>
+        </div>
+      )}
 
       <div className="setup-section">
         <label className="setup-label">Board Size</label>

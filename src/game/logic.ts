@@ -8,15 +8,35 @@ export function getWinLength(size: number): number {
   return Math.min(size, size <= 4 ? size : 4);
 }
 
+export function getDefaultLiveMarkCount(size: number): number {
+  if (size <= 3) return 2;
+  if (size <= 4) return 3;
+  return 4;
+}
+
+export function getLiveMarkCap(size: number, winLength: number): number {
+  return Math.min(size - 1, winLength, 5);
+}
+
 export function createGameState(config: GameConfig, firstPlayer: Player): GameState {
+  const resolvedConfig =
+    config.variant === 'limited'
+      ? {
+          ...config,
+          liveMarkCount: config.liveMarkCount ?? getDefaultLiveMarkCount(config.size),
+        }
+      : config;
+
   return {
-    board: createEmptyBoard(config.size),
+    board: createEmptyBoard(resolvedConfig.size),
     currentPlayer: firstPlayer,
     winner: null,
     winningCells: [],
     status: 'playing',
-    config,
+    config: resolvedConfig,
     firstPlayer,
+    playerMoves: { X: [], O: [] },
+    expiredCell: null,
   };
 }
 
@@ -72,6 +92,10 @@ export function findWinningCells(board: Board, winLength: number): [number, numb
   return [];
 }
 
+function effectiveVariant(variant: GameVariant): 'standard' | 'misere' {
+  return variant === 'misere' ? 'misere' : 'standard';
+}
+
 export function checkWinner(
   board: Board,
   winLength: number,
@@ -81,19 +105,59 @@ export function checkWinner(
   if (winningCells.length > 0) {
     const [r, c] = winningCells[0];
     const linePlayer = board[r][c] as Player;
-    return variant === 'misere' ? opponent(linePlayer) : linePlayer;
+    return effectiveVariant(variant) === 'misere' ? opponent(linePlayer) : linePlayer;
   }
   if (getAvailableMoves(board).length === 0) return 'draw';
   return null;
+}
+
+function applyLimitedExpiration(
+  board: Board,
+  player: Player,
+  playerMoves: Record<Player, Move[]>,
+  move: Move,
+  liveMarkCount: number,
+): { board: Board; playerMoves: Record<Player, Move[]>; expiredCell: Move | null } {
+  const nextMoves = [...playerMoves[player], move];
+  let expiredCell: Move | null = null;
+  let updatedBoard = board;
+
+  if (nextMoves.length > liveMarkCount) {
+    const oldest = nextMoves[0];
+    updatedBoard = board.map((row, r) =>
+      row.map((cell, c) => (r === oldest.row && c === oldest.col ? null : cell)),
+    );
+    expiredCell = oldest;
+    nextMoves.shift();
+  }
+
+  return {
+    board: updatedBoard,
+    playerMoves: { ...playerMoves, [player]: nextMoves },
+    expiredCell,
+  };
 }
 
 export function applyMove(state: GameState, move: Move): GameState {
   if (state.status !== 'playing') return state;
   if (state.board[move.row][move.col] !== null) return state;
 
-  const board = state.board.map((row, r) =>
-    row.map((cell, c) => (r === move.row && c === move.col ? state.currentPlayer : cell)),
+  const player = state.currentPlayer;
+  let board = state.board.map((row, r) =>
+    row.map((cell, c) => (r === move.row && c === move.col ? player : cell)),
   );
+
+  let playerMoves = state.playerMoves;
+  let expiredCell: Move | null = null;
+
+  if (state.config.variant === 'limited') {
+    const liveMarkCount =
+      state.config.liveMarkCount ?? getDefaultLiveMarkCount(state.config.size);
+    const result = applyLimitedExpiration(board, player, playerMoves, move, liveMarkCount);
+    board = result.board;
+    playerMoves = result.playerMoves;
+    expiredCell = result.expiredCell;
+  }
 
   const winner = checkWinner(board, state.config.winLength, state.config.variant);
   const winningCells = winner && winner !== 'draw' ? findWinningCells(board, state.config.winLength) : [];
@@ -101,7 +165,9 @@ export function applyMove(state: GameState, move: Move): GameState {
   return {
     ...state,
     board,
-    currentPlayer: state.currentPlayer === 'X' ? 'O' : 'X',
+    playerMoves,
+    expiredCell,
+    currentPlayer: player === 'X' ? 'O' : 'X',
     winner,
     winningCells,
     status: winner ? 'finished' : 'playing',

@@ -5,18 +5,19 @@ interface CellProps {
   row: number;
   col: number;
   isWinning: boolean;
+  isExpiring?: boolean;
   onClick: (row: number, col: number) => void;
   disabled: boolean;
   size: number;
 }
 
-export function Cell({ value, row, col, isWinning, onClick, disabled, size }: CellProps) {
+export function Cell({ value, row, col, isWinning, isExpiring, onClick, disabled, size }: CellProps) {
   const fontSize = size <= 4 ? '2.5rem' : size <= 6 ? '1.8rem' : '1.2rem';
 
   return (
     <button
       type="button"
-      className={`cell ${value ? `cell-${value.toLowerCase()}` : ''} ${isWinning ? 'cell-winning' : ''}`}
+      className={`cell ${value ? `cell-${value.toLowerCase()}` : ''} ${isWinning ? 'cell-winning' : ''} ${isExpiring ? 'cell-expiring' : ''}`}
       onClick={() => onClick(row, col)}
       disabled={disabled || value !== null}
       aria-label={value ? `${value} at row ${row + 1}, column ${col + 1}` : `Empty cell at row ${row + 1}, column ${col + 1}`}
