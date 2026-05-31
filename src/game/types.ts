@@ -41,11 +41,22 @@ export interface GameState {
   firstPlayer: Player;
   playerMoves: Record<Player, Move[]>;
   expiredCell: Move | null;
+  /** Non-null while UI should animate marks falling after compact. */
+  compactedMoves: CompactedMove[] | null;
 }
 
 export interface Move {
   row: number;
   col: number;
+}
+
+/** One mark sliding down after column compact (visual animation only). */
+export interface CompactedMove {
+  fromRow: number;
+  fromCol: number;
+  toRow: number;
+  toCol: number;
+  player: Player;
 }
 
 /** Gravity mode: only column is chosen; row is computed on drop. */

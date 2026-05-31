@@ -25,6 +25,10 @@ import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
 
+const EXPIRE_ANIM_MS = 450;
+const COMPACT_FALL_MS = 300;
+const COMPACT_FALL_DELAY_MS = 150;
+
 function getLosingPlayer(state: GameState): Player | null {
   if (!state.winningCells.length || state.winner === 'draw' || !state.winner) return null;
   const [r, c] = state.winningCells[0];
@@ -106,7 +110,9 @@ export default function App() {
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [droppedCell, setDroppedCell] = useState<Move | null>(null);
+  const finishSoundPendingRef = useRef(false);
   const urlAppliedRef = useRef(false);
 
   useEffect(() => {
@@ -171,7 +177,7 @@ export default function App() {
 
   const handleCellClick = useCallback(
     (row: number, col: number) => {
-      if (!gameState || gameState.status !== 'playing' || isAiThinking) return;
+      if (!gameState || gameState.status !== 'playing' || isAiThinking || isAnimating) return;
 
       const isHumanTurn =
         mode === 'pvp' ||
@@ -192,10 +198,11 @@ export default function App() {
       const next = applyMove(gameState, input);
       if (next === gameState) return;
 
+      if (next.compactedMoves?.length) setIsAnimating(true);
       setGameState(next);
       playPlace();
     },
-    [gameState, mode, isAiThinking, playPlace],
+    [gameState, mode, isAiThinking, isAnimating, playPlace],
   );
 
   useEffect(() => {
@@ -209,9 +216,26 @@ export default function App() {
     playExpire();
     const timer = setTimeout(() => {
       setGameState((prev) => (prev ? { ...prev, expiredCell: null } : prev));
-    }, 450);
+    }, EXPIRE_ANIM_MS);
     return () => clearTimeout(timer);
   }, [gameState?.expiredCell, playExpire]);
+
+  useEffect(() => {
+    if (!gameState) return;
+    const moves = gameState.compactedMoves;
+    if (!moves?.length) return;
+
+    setIsAnimating(true);
+    const delay = gameState.expiredCell ? COMPACT_FALL_DELAY_MS : 0;
+    const totalMs = Math.max(gameState.expiredCell ? EXPIRE_ANIM_MS : 0, delay + COMPACT_FALL_MS);
+
+    const timer = setTimeout(() => {
+      setGameState((prev) => (prev ? { ...prev, compactedMoves: null } : prev));
+      setIsAnimating(false);
+    }, totalMs);
+
+    return () => clearTimeout(timer);
+  }, [gameState?.compactedMoves, gameState?.expiredCell]);
 
   useEffect(() => {
     if (!gameState) {
@@ -221,13 +245,27 @@ export default function App() {
     const wasPlaying = prevGameStatusRef.current === 'playing';
     prevGameStatusRef.current = gameState.status;
     if (wasPlaying && gameState.status === 'finished') {
+      if (isAnimating) {
+        finishSoundPendingRef.current = true;
+        return;
+      }
       if (gameState.winner === 'draw') {
         playDraw();
       } else if (gameState.winner) {
         playWin(gameState.config.rules.misere);
       }
     }
-  }, [gameState, playDraw, playWin]);
+  }, [gameState, isAnimating, playDraw, playWin]);
+
+  useEffect(() => {
+    if (isAnimating || !finishSoundPendingRef.current || gameState?.status !== 'finished') return;
+    finishSoundPendingRef.current = false;
+    if (gameState.winner === 'draw') {
+      playDraw();
+    } else if (gameState.winner) {
+      playWin(gameState.config.rules.misere);
+    }
+  }, [isAnimating, gameState, playDraw, playWin]);
 
   useEffect(() => {
     if (!gameState || gameState.status !== 'playing' || mode !== 'pvc') return;
@@ -236,7 +274,7 @@ export default function App() {
       (gameState.currentPlayer === 'X' && gameState.firstPlayer !== 'X') ||
       (gameState.currentPlayer === 'O' && gameState.firstPlayer !== 'O');
 
-    if (!isComputerTurn) return;
+    if (!isComputerTurn || isAnimating) return;
 
     setIsAiThinking(true);
     const timer = setTimeout(() => {
@@ -248,6 +286,7 @@ export default function App() {
         if (prev.config.rules.gravity) {
           setDroppedCell({ row: move.row, col: move.col });
         }
+        if (next.compactedMoves?.length) setIsAnimating(true);
         return next;
       });
       playPlace();
@@ -255,14 +294,18 @@ export default function App() {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [gameState, mode, playPlace]);
+  }, [gameState, mode, playPlace, isAnimating]);
 
   const handleNewGame = () => {
     setGameState(null);
+    setIsAnimating(false);
+    finishSoundPendingRef.current = false;
     setPhase('setup');
   };
 
   const handleRematch = () => {
+    setIsAnimating(false);
+    finishSoundPendingRef.current = false;
     setSuggestedFirst(suggestFirstPlayer());
     setPhase('first-player');
   };
@@ -371,8 +414,15 @@ export default function App() {
               winningCells={gameState.winningCells}
               expiredCell={gameState.expiredCell}
               droppedCell={droppedCell}
+              compactedMoves={gameState.compactedMoves}
+              compactFallDelayMs={
+                gameState.expiredCell && gameState.compactedMoves?.length
+                  ? COMPACT_FALL_DELAY_MS
+                  : 0
+              }
+              showWinningCells={!isAnimating}
               onCellClick={handleCellClick}
-              disabled={gameState.status === 'finished' || isAiThinking}
+              disabled={gameState.status === 'finished' || isAiThinking || isAnimating}
             />
 
             <div className="game-actions">

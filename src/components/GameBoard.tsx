@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { isColumnFull } from '../game/logic';
 import { Cell } from './Cell';
-import type { Board, Move } from '../game/types';
+import type { Board, CompactedMove, Move } from '../game/types';
 
 interface BoardProps {
   board: Board;
@@ -9,6 +9,9 @@ interface BoardProps {
   winningCells: [number, number][];
   expiredCell: Move | null;
   droppedCell: Move | null;
+  compactedMoves: CompactedMove[] | null;
+  compactFallDelayMs: number;
+  showWinningCells: boolean;
   onCellClick: (row: number, col: number) => void;
   disabled: boolean;
 }
@@ -25,12 +28,25 @@ function isDroppedCell(droppedCell: Move | null, row: number, col: number): bool
   return droppedCell?.row === row && droppedCell?.col === col;
 }
 
+function getCompactRowDelta(
+  compactedMoves: CompactedMove[] | null,
+  row: number,
+  col: number,
+): number | undefined {
+  const move = compactedMoves?.find((m) => m.toRow === row && m.toCol === col);
+  if (!move) return undefined;
+  return move.fromRow - move.toRow;
+}
+
 export function GameBoard({
   board,
   gravity,
   winningCells,
   expiredCell,
   droppedCell,
+  compactedMoves,
+  compactFallDelayMs,
+  showWinningCells,
   onCellClick,
   disabled,
 }: BoardProps) {
@@ -43,6 +59,7 @@ export function GameBoard({
       style={{
         gridTemplateColumns: `repeat(${size}, 1fr)`,
         gridTemplateRows: `repeat(${size}, 1fr)`,
+        ['--board-gap' as string]: '6px',
       }}
       onMouseLeave={() => setHoveredCol(null)}
     >
@@ -52,6 +69,7 @@ export function GameBoard({
           const columnHovered = gravity && hoveredCol === c && !columnFull;
           const cellDisabled =
             disabled || (gravity ? columnFull : cell !== null);
+          const compactRowDelta = getCompactRowDelta(compactedMoves, r, c);
 
           return (
             <Cell
@@ -59,9 +77,11 @@ export function GameBoard({
               value={cell}
               row={r}
               col={c}
-              isWinning={isWinningCell(winningCells, r, c)}
+              isWinning={showWinningCells && isWinningCell(winningCells, r, c)}
               isExpiring={isExpiredCell(expiredCell, r, c)}
-              isDropping={isDroppedCell(droppedCell, r, c)}
+              isDropping={compactRowDelta === undefined && isDroppedCell(droppedCell, r, c)}
+              compactRowDelta={compactRowDelta}
+              compactFallDelayMs={compactRowDelta !== undefined ? compactFallDelayMs : undefined}
               isGravity={gravity}
               isColumnHovered={columnHovered}
               isColumnFull={columnFull}

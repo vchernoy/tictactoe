@@ -951,6 +951,10 @@
   animation: dropIn 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
+.cell-compact-falling .cell-mark {
+  animation: compactFall 0.3s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
 /* Game Actions */
 .game-actions {
   display: flex;
@@ -1027,6 +1031,17 @@
 @keyframes dropIn {
   from { transform: translateY(-120%) scale(0.85); opacity: 0.4; }
   to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes compactFall {
+  from {
+    transform: translateY(
+      calc(var(--compact-row-delta) * (100% + var(--board-gap, 6px)))
+    );
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse {

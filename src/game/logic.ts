@@ -1,4 +1,13 @@
-import type { Board, GameConfig, GameRules, GameState, Move, MoveInput, Player } from './types';
+import type {
+  Board,
+  CompactedMove,
+  GameConfig,
+  GameRules,
+  GameState,
+  Move,
+  MoveInput,
+  Player,
+} from './types';
 
 export function createEmptyBoard(size: number): Board {
   return Array.from({ length: size }, () => Array(size).fill(null));
@@ -51,6 +60,7 @@ export function createGameState(config: GameConfig, firstPlayer: Player): GameSt
     firstPlayer,
     playerMoves: { X: [], O: [] },
     expiredCell: null,
+    compactedMoves: null,
   };
 }
 
@@ -68,16 +78,35 @@ export function isColumnFull(board: Board, col: number): boolean {
 
 /** Pack non-null cells to the bottom of each column (gravity-style). */
 export function compactAllColumns(board: Board): Board {
+  return compactAllColumnsWithMoves(board).board;
+}
+
+export function compactAllColumnsWithMoves(board: Board): {
+  board: Board;
+  moves: CompactedMove[];
+} {
   const size = board.length;
   const next = createEmptyBoard(size);
+  const moves: CompactedMove[] = [];
+
   for (let c = 0; c < size; c++) {
-    const pieces = board.map((row) => row[c]).filter((cell) => cell !== null);
+    const pieces: { row: number; player: Player }[] = [];
+    for (let r = 0; r < size; r++) {
+      const cell = board[r][c];
+      if (cell !== null) pieces.push({ row: r, player: cell });
+    }
     const gap = size - pieces.length;
     for (let i = 0; i < pieces.length; i++) {
-      next[gap + i][c] = pieces[i];
+      const toRow = gap + i;
+      const { row: fromRow, player } = pieces[i];
+      next[toRow][c] = player;
+      if (fromRow !== toRow) {
+        moves.push({ fromRow, fromCol: c, toRow, toCol: c, player });
+      }
     }
   }
-  return next;
+
+  return { board: next, moves };
 }
 
 function syncPlayerMovesAfterCompact(
@@ -254,6 +283,7 @@ export function applyMove(state: GameState, input: MoveInput): GameState {
         board,
         playerMoves: { ...playerMoves, [player]: nextMoves },
         expiredCell: null,
+        compactedMoves: null,
         currentPlayer: player === 'X' ? 'O' : 'X',
         winner: immediateWinner,
         winningCells,
@@ -267,10 +297,29 @@ export function applyMove(state: GameState, input: MoveInput): GameState {
     expiredCell = result.expiredCell;
 
     const { gravity, compactOnExpire } = state.config.rules;
+    let compactedMoves: CompactedMove[] | null = null;
     if (expiredCell && gravity && compactOnExpire) {
-      board = compactAllColumns(board);
+      const compacted = compactAllColumnsWithMoves(board);
+      board = compacted.board;
+      compactedMoves = compacted.moves.length > 0 ? compacted.moves : null;
       playerMoves = syncPlayerMovesAfterCompact(board, playerMoves);
     }
+
+    const winner = checkWinner(board, state.config.winLength, state.config.rules);
+    const winningCells =
+      winner && winner !== 'draw' ? findWinningCells(board, state.config.winLength) : [];
+
+    return {
+      ...state,
+      board,
+      playerMoves,
+      expiredCell,
+      compactedMoves,
+      currentPlayer: player === 'X' ? 'O' : 'X',
+      winner,
+      winningCells,
+      status: winner ? 'finished' : 'playing',
+    };
   }
 
   const winner = checkWinner(board, state.config.winLength, state.config.rules);
@@ -281,6 +330,7 @@ export function applyMove(state: GameState, input: MoveInput): GameState {
     board,
     playerMoves,
     expiredCell,
+    compactedMoves: null,
     currentPlayer: player === 'X' ? 'O' : 'X',
     winner,
     winningCells,

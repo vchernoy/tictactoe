@@ -7,6 +7,8 @@ interface CellProps {
   isWinning: boolean;
   isExpiring?: boolean;
   isDropping?: boolean;
+  compactRowDelta?: number;
+  compactFallDelayMs?: number;
   isGravity?: boolean;
   isColumnHovered?: boolean;
   isColumnFull?: boolean;
@@ -23,6 +25,8 @@ export function Cell({
   isWinning,
   isExpiring,
   isDropping,
+  compactRowDelta,
+  compactFallDelayMs,
   isGravity,
   isColumnHovered,
   isColumnFull,
@@ -58,6 +62,7 @@ export function Cell({
         isWinning ? 'cell-winning' : '',
         isExpiring ? 'cell-expiring' : '',
         isDropping ? 'cell-dropping' : '',
+        compactRowDelta !== undefined ? 'cell-compact-falling' : '',
         isGravity ? 'cell-gravity' : '',
         isColumnHovered ? 'cell-column-hover' : '',
         isColumnFull ? 'cell-column-full' : '',
@@ -70,7 +75,19 @@ export function Cell({
       aria-label={ariaLabel}
     >
       {value && (
-        <span className="cell-mark" style={{ fontSize }}>
+        <span
+          className="cell-mark"
+          style={{
+            fontSize,
+            ...(compactRowDelta !== undefined
+              ? {
+                  ['--compact-row-delta' as string]: String(compactRowDelta),
+                  animationDelay:
+                    compactFallDelayMs !== undefined ? `${compactFallDelayMs}ms` : undefined,
+                }
+              : {}),
+          }}
+        >
           {value}
         </span>
       )}
