@@ -31,15 +31,11 @@ npm run preview
 
 ## GitHub Pages
 
-The app is configured for [GitHub Pages](https://pages.github.com/) at `https://vchernoy.github.io/tictactoe/`.
+The app is configured for [GitHub Pages](https://pages.github.com/) at **https://vchernoy.github.io/tictactoe/**.
 
-1. In the repo on GitHub, open **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-3. Push to `main` (or run the **Deploy to GitHub Pages** workflow manually). The workflow in `.github/workflows/deploy.yml` builds with `npm ci` and `npm run build`, then publishes `dist/`.
+Push to `main` (or run the **Deploy to GitHub Pages** workflow manually). The workflow in `.github/workflows/deploy.yml` builds with `npm ci` and `npm run build`, then publishes `dist/`.
 
-After a successful deploy, the live site is:
-
-**https://vchernoy.github.io/tictactoe/**
+The workflow uses `actions/configure-pages` with `enablement: true` to try to enable GitHub Pages automatically on first deploy. If deployment still fails with a Pages setup error, open **Settings → Pages** in the repo and set **Build and deployment → Source** to **GitHub Actions**, then re-run the workflow.
 
 ## Tech Stack
 
