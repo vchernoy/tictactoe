@@ -5,6 +5,7 @@ import {
 } from '../game/logic';
 import type { AiDifficulty, GameMode, GameVariant } from '../game/types';
 import { THEMES, type ThemeId } from '../themes';
+import { SoundToggle } from './SoundToggle';
 
 interface GameSetupProps {
   size: number;
@@ -14,6 +15,8 @@ interface GameSetupProps {
   liveMarkCount: number;
   theme: ThemeId;
   onThemeChange: (theme: ThemeId) => void;
+  soundEnabled: boolean;
+  onSoundToggle: () => void;
   onSizeChange: (size: number) => void;
   onModeChange: (mode: GameMode) => void;
   onVariantChange: (variant: GameVariant) => void;
@@ -91,6 +94,8 @@ export function GameSetup({
   variant,
   theme,
   onThemeChange,
+  soundEnabled,
+  onSoundToggle,
   onSizeChange,
   onModeChange,
   onVariantChange,
@@ -128,6 +133,11 @@ export function GameSetup({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="setup-section setup-section-row">
+        <label className="setup-label">Sound</label>
+        <SoundToggle enabled={soundEnabled} onToggle={onSoundToggle} />
       </div>
 
       <div className="setup-section">

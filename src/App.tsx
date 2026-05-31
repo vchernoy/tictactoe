@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FirstPlayerSuggestion } from './components/FirstPlayerSuggestion';
 import { GameBoard } from './components/GameBoard';
 import { GameSetup } from './components/GameSetup';
 import { getComputerMove } from './game/ai';
+import { SoundToggle } from './components/SoundToggle';
+import { useSound } from './hooks/useSound';
 import { useTheme } from './hooks/useTheme';
 import {
   applyMove,
@@ -14,7 +16,7 @@ import {
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
-import type { AiDifficulty, GameConfig, GameMode, GameState, GameVariant, Player } from './game/types';
+import type { AiDifficulty, GameConfig, GameMode, GameState, GameStatus, GameVariant, Player } from './game/types';
 import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
@@ -80,6 +82,8 @@ function getStatusMessage(state: GameState, mode: GameMode): string {
 
 export default function App() {
   const { theme, setTheme } = useTheme();
+  const { soundEnabled, toggleSound, playPlace, playWin, playDraw, playExpire } = useSound();
+  const prevGameStatusRef = useRef<GameStatus | null>(null);
   const [phase, setPhase] = useState<AppPhase>('setup');
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
@@ -151,17 +155,35 @@ export default function App() {
 
       const next = applyMove(gameState, { row, col });
       setGameState(next);
+      playPlace();
     },
-    [gameState, mode, isAiThinking],
+    [gameState, mode, isAiThinking, playPlace],
   );
 
   useEffect(() => {
     if (!gameState?.expiredCell) return;
+    playExpire();
     const timer = setTimeout(() => {
       setGameState((prev) => (prev ? { ...prev, expiredCell: null } : prev));
     }, 450);
     return () => clearTimeout(timer);
-  }, [gameState?.expiredCell]);
+  }, [gameState?.expiredCell, playExpire]);
+
+  useEffect(() => {
+    if (!gameState) {
+      prevGameStatusRef.current = null;
+      return;
+    }
+    const wasPlaying = prevGameStatusRef.current === 'playing';
+    prevGameStatusRef.current = gameState.status;
+    if (wasPlaying && gameState.status === 'finished') {
+      if (gameState.winner === 'draw') {
+        playDraw();
+      } else if (gameState.winner) {
+        playWin(gameState.config.variant === 'misere');
+      }
+    }
+  }, [gameState, playDraw, playWin]);
 
   useEffect(() => {
     if (!gameState || gameState.status !== 'playing' || mode !== 'pvc') return;
@@ -177,11 +199,12 @@ export default function App() {
       const aiPlayer = gameState.currentPlayer;
       const move = getComputerMove(gameState, aiPlayer);
       setGameState((prev) => (prev ? applyMove(prev, move) : prev));
+      playPlace();
       setIsAiThinking(false);
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [gameState, mode]);
+  }, [gameState, mode, playPlace]);
 
   const handleNewGame = () => {
     setGameState(null);
@@ -214,6 +237,8 @@ export default function App() {
             liveMarkCount={liveMarkCount}
             theme={theme}
             onThemeChange={setTheme}
+            soundEnabled={soundEnabled}
+            onSoundToggle={toggleSound}
             onSizeChange={handleSizeChange}
             onModeChange={setMode}
             onVariantChange={handleVariantChange}
@@ -235,6 +260,7 @@ export default function App() {
         {phase === 'playing' && gameState && (
           <div className="game-area">
             <div className="game-info">
+              <div className="game-info-top">
               <div className="board-meta">
                 <span className="meta-badge">{gameState.config.size}×{gameState.config.size}</span>
                 <span className="meta-badge">{mode === 'pvp' ? '2 Players' : 'vs AI'}</span>
@@ -255,6 +281,8 @@ export default function App() {
                     Limited · K={gameState.config.liveMarkCount ?? getDefaultLiveMarkCount(gameState.config.size, gameState.config.winLength)}
                   </span>
                 )}
+              </div>
+              <SoundToggle enabled={soundEnabled} onToggle={toggleSound} compact />
               </div>
               <p className={`status ${gameState.winner ? 'status-finished' : ''} ${isAiThinking ? 'status-thinking' : ''}`}>
                 {getStatusMessage(gameState, mode)}
