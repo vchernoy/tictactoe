@@ -10,9 +10,18 @@ export interface GameRules {
   limited: boolean;
   liveMarkCount: number;
   gravity: boolean;
+  /** Only meaningful when gravity && limited: pack columns after a mark expires. */
+  compactOnExpire: boolean;
 }
 
-export type RulesPreset = 'classic' | 'misere' | 'connect4' | 'limited' | 'chaos' | 'custom';
+export type RulesPreset =
+  | 'classic'
+  | 'misere'
+  | 'connect4'
+  | 'connect4Limited'
+  | 'limited'
+  | 'chaos'
+  | 'custom';
 
 export interface GameConfig {
   size: number;

@@ -13,17 +13,19 @@ A web-based Tic Tac Toe game with multiple rules, board sizes, themes, and AI di
 ### Composable rules
 Rules combine via independent toggles (or quick presets):
 
-| Preset | Misère | Limited | Gravity |
-|--------|--------|---------|---------|
-| Classic | — | — | — |
-| Misère | ✓ | — | — |
-| Connect-4 | — | — | ✓ |
-| Limited | — | ✓ (K = win length) | — |
-| Chaos | ✓ | ✓ (min K) | — |
+| Preset | Misère | Limited | Gravity | Fall on expire |
+|--------|--------|---------|---------|----------------|
+| Classic | — | — | — | — |
+| Misère | ✓ | — | — | — |
+| Connect-4 | — | — | ✓ | — |
+| Connect-4 Limited | — | ✓ (K = win length) | ✓ | ✓ |
+| Limited | — | ✓ (K = win length) | — | — |
+| Chaos | ✓ | ✓ (min K) | — | — |
 
 - **Misère** — completing a line loses (opponent wins)
 - **Limited moves** — each player keeps only their last K marks (adjustable K stepper)
 - **Gravity** — drop marks into columns; they fall to the bottom
+- **Realistic fall when marks expire** — sub-option when both Limited and Gravity are on: after the oldest mark expires, remaining marks in each column drop to fill gaps (new wins can form)
 
 Mix any toggles for custom variants (e.g. Misère + Gravity, Limited + Gravity).
 
@@ -48,13 +50,14 @@ Copy a link from the setup screen (or **Share** during a game) to send the curre
 | `limited` | 0, 1 | 0 |
 | `k` | number | win length (when limited) |
 | `gravity` | 0, 1 | 0 |
+| `compact` | 0, 1 | 0 (only when `limited=1` and `gravity=1`) |
 | `diff` | `easy`, `medium`, `hard` | `medium` (pvc only) |
 | `theme` | `midnight`, `chalkboard`, `wood`, `neon` | localStorage / midnight |
 
 Example:
 
 ```
-https://vchernoy.xyz/tictactoe/?size=5&mode=pvc&misere=1&gravity=1&limited=1&k=4&diff=hard&theme=neon
+https://vchernoy.xyz/tictactoe/?size=5&mode=pvc&gravity=1&limited=1&compact=1&k=4&diff=hard&theme=neon
 ```
 
 Theme from the URL applies on initial load only; sound and other prefs still come from `localStorage`.

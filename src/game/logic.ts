@@ -66,6 +66,49 @@ export function isColumnFull(board: Board, col: number): boolean {
   return getLowestEmptyRow(board, col) === null;
 }
 
+/** Pack non-null cells to the bottom of each column (gravity-style). */
+export function compactAllColumns(board: Board): Board {
+  const size = board.length;
+  const next = createEmptyBoard(size);
+  for (let c = 0; c < size; c++) {
+    const pieces = board.map((row) => row[c]).filter((cell) => cell !== null);
+    const gap = size - pieces.length;
+    for (let i = 0; i < pieces.length; i++) {
+      next[gap + i][c] = pieces[i];
+    }
+  }
+  return next;
+}
+
+function syncPlayerMovesAfterCompact(
+  board: Board,
+  playerMoves: Record<Player, Move[]>,
+): Record<Player, Move[]> {
+  const size = board.length;
+  const updated: Record<Player, Move[]> = { X: [], O: [] };
+
+  for (const player of ['X', 'O'] as const) {
+    const colRows = new Map<number, number[]>();
+    for (let c = 0; c < size; c++) {
+      const rows: number[] = [];
+      for (let r = size - 1; r >= 0; r--) {
+        if (board[r][c] === player) rows.push(r);
+      }
+      colRows.set(c, rows);
+    }
+
+    const colIndex = new Map<number, number>();
+    for (const move of playerMoves[player]) {
+      const rows = colRows.get(move.col) ?? [];
+      const idx = colIndex.get(move.col) ?? 0;
+      updated[player].push({ row: rows[idx], col: move.col });
+      colIndex.set(move.col, idx + 1);
+    }
+  }
+
+  return updated;
+}
+
 export function getAvailableMoves(board: Board, rules: GameRules): Move[] {
   if (rules.gravity) {
     const moves: Move[] = [];
@@ -170,7 +213,6 @@ function applyLimitedExpiration(
 
   if (nextMoves.length > liveMarkCount) {
     const oldest = nextMoves[0];
-    // Gravity + Limited: expired cell becomes empty; marks above stay in place (no re-gravity).
     updatedBoard = board.map((row, r) =>
       row.map((cell, c) => (r === oldest.row && c === oldest.col ? null : cell)),
     );
@@ -223,6 +265,12 @@ export function applyMove(state: GameState, input: MoveInput): GameState {
     board = result.board;
     playerMoves = result.playerMoves;
     expiredCell = result.expiredCell;
+
+    const { gravity, compactOnExpire } = state.config.rules;
+    if (expiredCell && gravity && compactOnExpire) {
+      board = compactAllColumns(board);
+      playerMoves = syncPlayerMovesAfterCompact(board, playerMoves);
+    }
   }
 
   const winner = checkWinner(board, state.config.winLength, state.config.rules);

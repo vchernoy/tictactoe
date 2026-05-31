@@ -333,6 +333,11 @@ export default function App() {
                 {gameState.config.rules.gravity && (
                   <span className="meta-badge gravity">Gravity</span>
                 )}
+                {gameState.config.rules.limited &&
+                  gameState.config.rules.gravity &&
+                  gameState.config.rules.compactOnExpire && (
+                  <span className="meta-badge compact-expire">Fall on expire</span>
+                )}
               </div>
               <div className="game-info-actions">
                 <ShareButton

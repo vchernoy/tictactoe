@@ -29,6 +29,7 @@ const PRESETS: { id: Exclude<RulesPreset, 'custom'>; name: string; desc: string 
   { id: 'classic', name: 'Classic', desc: 'Standard N in a row' },
   { id: 'misere', name: 'Misère', desc: 'Line completes = lose' },
   { id: 'connect4', name: 'Connect-4', desc: 'Drop into columns' },
+  { id: 'connect4Limited', name: 'Connect-4 Limited', desc: 'Gravity + K marks, fall on expire' },
   { id: 'limited', name: 'Limited', desc: 'K live marks each' },
   { id: 'chaos', name: 'Chaos', desc: 'Misère + min K' },
 ];
@@ -36,7 +37,7 @@ const PRESETS: { id: Exclude<RulesPreset, 'custom'>; name: string; desc: string 
 const RULE_TOGGLES: { key: keyof Pick<GameRules, 'misere' | 'limited' | 'gravity'>; name: string; desc: string }[] = [
   { key: 'misere', name: 'Misère', desc: 'Completing a line loses' },
   { key: 'limited', name: 'Limited moves', desc: 'Only K marks on board' },
-  { key: 'gravity', name: 'Gravity', desc: 'Drop into columns' },
+  { key: 'gravity', name: 'Gravity', desc: 'Drop marks in columns' },
 ];
 
 const DIFFICULTIES: { id: AiDifficulty; name: string; desc: string }[] = [
@@ -117,7 +118,13 @@ function getRulesHint(rules: GameRules): string {
     parts.push('Gravity: pick a column — your mark drops to the bottom.');
   }
   if (rules.limited && rules.gravity) {
-    parts.push('When a mark expires in gravity mode, the cell empties without re-dropping marks above.');
+    if (rules.compactOnExpire) {
+      parts.push(
+        'When a mark expires, remaining marks in that column fall to fill gaps (new lines can form).',
+      );
+    } else {
+      parts.push('When a mark expires in gravity mode, the cell empties without re-dropping marks above.');
+    }
   }
 
   if (parts.length === 0) {
@@ -155,8 +162,17 @@ export function GameSetup({
     if (key === 'limited' && next.limited && !rules.limited) {
       next.liveMarkCount = winLength;
     }
+    if (!next.limited || !next.gravity) {
+      next.compactOnExpire = false;
+    }
     onRulesChange(next);
   };
+
+  const handleCompactOnExpireToggle = () => {
+    onRulesChange({ ...rules, compactOnExpire: !rules.compactOnExpire });
+  };
+
+  const showCompactSubToggle = rules.limited && rules.gravity;
 
   const handleLiveMarkCountChange = (count: number) => {
     onRulesChange({ ...rules, liveMarkCount: count });
@@ -261,19 +277,39 @@ export function GameSetup({
 
         <div className="rule-toggles">
           {RULE_TOGGLES.map(({ key, name, desc }) => (
-            <button
-              key={key}
-              type="button"
-              className={`rule-toggle ${rules[key] ? 'active' : ''}`}
-              onClick={() => handleToggle(key)}
-              aria-pressed={rules[key]}
-            >
-              <span className="rule-toggle-check" aria-hidden="true">{rules[key] ? '✓' : ''}</span>
-              <span className="rule-toggle-text">
-                <span className="rule-toggle-name">{name}</span>
-                <span className="rule-toggle-desc">{desc}</span>
-              </span>
-            </button>
+            <div key={key} className="rule-toggle-group">
+              <button
+                type="button"
+                className={`rule-toggle ${rules[key] ? 'active' : ''}`}
+                onClick={() => handleToggle(key)}
+                aria-pressed={rules[key]}
+              >
+                <span className="rule-toggle-check" aria-hidden="true">{rules[key] ? '✓' : ''}</span>
+                <span className="rule-toggle-text">
+                  <span className="rule-toggle-name">{name}</span>
+                  <span className="rule-toggle-desc">{desc}</span>
+                </span>
+              </button>
+              {key === 'gravity' && showCompactSubToggle && (
+                <button
+                  type="button"
+                  className={`rule-toggle rule-toggle-sub ${rules.compactOnExpire ? 'active' : ''}`}
+                  onClick={handleCompactOnExpireToggle}
+                  aria-pressed={rules.compactOnExpire}
+                >
+                  <span className="rule-toggle-sub-branch" aria-hidden="true">└</span>
+                  <span className="rule-toggle-check" aria-hidden="true">
+                    {rules.compactOnExpire ? '✓' : ''}
+                  </span>
+                  <span className="rule-toggle-text">
+                    <span className="rule-toggle-name">Realistic fall when marks expire</span>
+                    <span className="rule-toggle-desc">
+                      Marks fall to fill gaps when old ones expire
+                    </span>
+                  </span>
+                </button>
+              )}
+            </div>
           ))}
         </div>
 

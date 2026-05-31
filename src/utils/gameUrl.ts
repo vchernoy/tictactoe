@@ -22,6 +22,7 @@ const GAME_PARAM_KEYS = [
   'limited',
   'k',
   'gravity',
+  'compact',
   'diff',
   'theme',
 ] as const;
@@ -83,6 +84,8 @@ export function parseParamsToConfig(search: string): ParsedUrlConfig {
   const misere = parseBoolParam(params.get('misere'));
   const limited = parseBoolParam(params.get('limited'));
   const gravity = parseBoolParam(params.get('gravity'));
+  const compactOnExpire =
+    limited && gravity ? parseBoolParam(params.get('compact')) : false;
 
   const defaultK = getDefaultLiveMarkCount(size, winLength);
   let liveMarkCount = defaultK;
@@ -101,6 +104,7 @@ export function parseParamsToConfig(search: string): ParsedUrlConfig {
     limited,
     gravity,
     liveMarkCount,
+    compactOnExpire,
   };
 
   const aiDifficulty = mode === 'pvc' ? parseDifficulty(params.get('diff')) : DEFAULT_DIFFICULTY;
@@ -142,6 +146,10 @@ export function encodeConfigToParams(config: ShareableGameConfig): URLSearchPara
 
   if (config.rules.gravity) {
     params.set('gravity', '1');
+  }
+
+  if (config.rules.limited && config.rules.gravity && config.rules.compactOnExpire) {
+    params.set('compact', '1');
   }
 
   if (config.mode === 'pvc' && config.aiDifficulty !== DEFAULT_DIFFICULTY) {
