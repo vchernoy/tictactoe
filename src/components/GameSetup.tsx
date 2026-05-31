@@ -83,6 +83,11 @@ function getWinHint(size: number, variant: GameVariant): string {
       ? `Win by getting ${size} in a row — marks expire after K moves`
       : `Win by getting 4 in a row on a ${size}×${size} board — marks expire after K moves`;
   }
+  if (variant === 'gravity') {
+    return size <= 4
+      ? `Drop marks into columns — ${size} in a row wins`
+      : `Drop marks into columns — 4 in a row wins on a ${size}×${size} board`;
+  }
   return size <= 4
     ? `Win by getting ${size} in a row`
     : `Win by getting 4 in a row on a ${size}×${size} board`;
@@ -210,13 +215,23 @@ export function GameSetup({
             <span className="variant-name">Limited</span>
             <span className="variant-desc">Only K marks on board</span>
           </button>
+          <button
+            type="button"
+            className={`variant-btn ${variant === 'gravity' ? 'active' : ''}`}
+            onClick={() => onVariantChange('gravity')}
+          >
+            <span className="variant-name">Gravity</span>
+            <span className="variant-desc">Drop into columns</span>
+          </button>
         </div>
         <p className="setup-hint variant-hint">
           {variant === 'misere'
             ? 'Misère: the player who gets N in a row loses. Draws still happen when the board fills with no line.'
             : variant === 'limited'
               ? 'Limited: standard N-in-a-row wins, but each player keeps only their last K marks. Misère rules do not apply in this mode.'
-              : 'Standard: first player to get N in a row wins.'}
+              : variant === 'gravity'
+                ? 'Pick a column — your mark drops to the bottom. Standard N-in-a-row wins; full columns cannot be played.'
+                : 'Standard: first player to get N in a row wins.'}
         </p>
       </div>
 

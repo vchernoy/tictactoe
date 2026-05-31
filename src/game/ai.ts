@@ -11,9 +11,14 @@ function evaluateBoard(state: GameState, aiPlayer: Player): number {
   const center = Math.floor(size / 2);
   let score = 0;
 
-  for (const { row, col } of getAvailableMoves(state.board)) {
-    const dist = Math.abs(row - center) + Math.abs(col - center);
-    score += (size - dist) * 0.1;
+  const variant = state.config.variant;
+  for (const { row, col } of getAvailableMoves(state.board, variant)) {
+    if (variant === 'gravity') {
+      score += (size - Math.abs(col - center)) * 0.15;
+    } else {
+      const dist = Math.abs(row - center) + Math.abs(col - center);
+      score += (size - dist) * 0.1;
+    }
   }
 
   return config.variant === 'misere' ? -score : score;
@@ -36,7 +41,7 @@ function minimax(
 
   if (depth === 0) return evaluateBoard(state, aiPlayer);
 
-  const moves = getAvailableMoves(state.board);
+  const moves = getAvailableMoves(state.board, state.config.variant);
   if (maximizing) {
     let maxEval = -Infinity;
     for (const move of moves) {
@@ -59,7 +64,7 @@ function minimax(
 }
 
 function getMaxDepth(state: GameState): number {
-  const empty = getAvailableMoves(state.board).length;
+  const empty = getAvailableMoves(state.board, state.config.variant).length;
   const { size } = state.config;
 
   if (size <= 3) return empty;
@@ -89,7 +94,7 @@ function filterLosingMoves(state: GameState, moves: Move[], aiPlayer: Player): M
 }
 
 function prepareMoves(state: GameState, aiPlayer: Player): Move[] {
-  let moves = getAvailableMoves(state.board);
+  let moves = getAvailableMoves(state.board, state.config.variant);
   if (moves.length === 0) return [];
   return filterLosingMoves(state, moves, aiPlayer);
 }
@@ -107,7 +112,7 @@ function findBlockingMove(state: GameState, moves: Move[], aiPlayer: Player): Mo
   const { winLength, variant } = state.config;
   const human = opponent(aiPlayer);
 
-  for (const move of getAvailableMoves(state.board)) {
+  for (const move of getAvailableMoves(state.board, variant)) {
     const next = applyMove({ ...state, currentPlayer: human }, move);
     if (checkWinner(next.board, winLength, variant) === human && moves.some((m) => m.row === move.row && m.col === move.col)) {
       return move;
@@ -124,6 +129,14 @@ function positionalScore(state: GameState, move: Move): number {
   const size = state.config.size;
   const center = Math.floor(size / 2);
   const { row, col } = move;
+
+  if (state.config.variant === 'gravity') {
+    const colDist = Math.abs(col - center);
+    if (colDist === 0) return 3;
+    if (colDist === 1) return 2;
+    return 1;
+  }
+
   if (row === center && col === center) return 3;
   const onEdge = row === 0 || row === size - 1 || col === 0 || col === size - 1;
   const isCorner = onEdge && (row === 0 || row === size - 1) && (col === 0 || col === size - 1);
@@ -168,9 +181,14 @@ function pickMinimaxMove(state: GameState, moves: Move[], aiPlayer: Player, dept
   return pickRandom(bestMoves);
 }
 
+function fallbackMove(state: GameState): Move {
+  const moves = getAvailableMoves(state.board, state.config.variant);
+  return moves[0] ?? { row: 0, col: 0 };
+}
+
 function getComputerMoveEasy(state: GameState, aiPlayer: Player): Move {
   const moves = prepareMoves(state, aiPlayer);
-  if (moves.length === 0) return { row: 0, col: 0 };
+  if (moves.length === 0) return fallbackMove(state);
 
   if (Math.random() < 0.3) {
     const win = findWinningMove(state, moves, aiPlayer);
@@ -184,7 +202,7 @@ function getComputerMoveEasy(state: GameState, aiPlayer: Player): Move {
 
 function getComputerMoveMedium(state: GameState, aiPlayer: Player): Move {
   const moves = prepareMoves(state, aiPlayer);
-  if (moves.length === 0) return { row: 0, col: 0 };
+  if (moves.length === 0) return fallbackMove(state);
 
   const win = findWinningMove(state, moves, aiPlayer);
   if (win) return win;
@@ -201,8 +219,8 @@ function getComputerMoveMedium(state: GameState, aiPlayer: Player): Move {
 }
 
 function getComputerMoveHard(state: GameState, aiPlayer: Player): Move {
-  let moves = getAvailableMoves(state.board);
-  if (moves.length === 0) return { row: 0, col: 0 };
+  let moves = getAvailableMoves(state.board, state.config.variant);
+  if (moves.length === 0) return fallbackMove(state);
 
   const { winLength, variant } = state.config;
   moves = filterLosingMoves(state, moves, aiPlayer);
@@ -217,7 +235,7 @@ function getComputerMoveHard(state: GameState, aiPlayer: Player): Move {
     for (const move of moves) {
       const testState = { ...state, currentPlayer: aiPlayer };
       const afterAi = applyMove(testState, move);
-      const humanWin = getAvailableMoves(afterAi.board).some((m) => {
+      const humanWin = getAvailableMoves(afterAi.board, variant).some((m) => {
         const blocked = applyMove(afterAi, m);
         return checkWinner(blocked.board, winLength, variant) === state.currentPlayer;
       });

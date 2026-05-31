@@ -13,10 +13,11 @@ import {
   getDefaultLiveMarkCount,
   getLiveMarkMax,
   getLiveMarkMin,
+  getLowestEmptyRow,
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
-import type { AiDifficulty, GameConfig, GameMode, GameState, GameStatus, GameVariant, Player } from './game/types';
+import type { AiDifficulty, GameConfig, GameMode, GameState, GameStatus, GameVariant, Move, Player } from './game/types';
 import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
@@ -30,10 +31,13 @@ function getLosingPlayer(state: GameState): Player | null {
 
 function getStatusMessage(state: GameState, mode: GameMode): string {
   const isMisere = state.config.variant === 'misere';
+  const isGravity = state.config.variant === 'gravity';
   const loser = isMisere ? getLosingPlayer(state) : null;
 
   if (state.winner === 'draw') {
-    return isMisere ? "It's a draw! No one completed a line." : "It's a draw!";
+    if (isMisere) return "It's a draw! No one completed a line.";
+    if (isGravity) return "It's a draw! All columns are full.";
+    return "It's a draw!";
   }
 
   if (state.winner) {
@@ -66,7 +70,9 @@ function getStatusMessage(state: GameState, mode: GameMode): string {
 
   if (mode === 'pvp') {
     const turn = state.currentPlayer === 'X' ? "Player 1's turn (X)" : "Player 2's turn (O)";
-    return isMisere ? `${turn} — avoid completing a line` : turn;
+    if (isMisere) return `${turn} — avoid completing a line`;
+    if (isGravity) return `${turn} — pick a column to drop`;
+    return turn;
   }
 
   const isHumanTurn =
@@ -75,6 +81,10 @@ function getStatusMessage(state: GameState, mode: GameMode): string {
 
   if (isMisere) {
     return isHumanTurn ? 'Your turn — avoid completing a line' : 'Computer is thinking...';
+  }
+
+  if (isGravity) {
+    return isHumanTurn ? 'Your turn — pick a column to drop' : 'Computer is thinking...';
   }
 
   return isHumanTurn ? 'Your turn' : 'Computer is thinking...';
@@ -95,6 +105,7 @@ export default function App() {
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [droppedCell, setDroppedCell] = useState<Move | null>(null);
 
   const handleSizeChange = useCallback((newSize: number) => {
     setSize(newSize);
@@ -153,12 +164,30 @@ export default function App() {
 
       if (!isHumanTurn) return;
 
-      const next = applyMove(gameState, { row, col });
+      const input =
+        gameState.config.variant === 'gravity' ? { col } : { row, col };
+
+      if (gameState.config.variant === 'gravity') {
+        const dropRow = getLowestEmptyRow(gameState.board, col);
+        if (dropRow !== null) {
+          setDroppedCell({ row: dropRow, col });
+        }
+      }
+
+      const next = applyMove(gameState, input);
+      if (next === gameState) return;
+
       setGameState(next);
       playPlace();
     },
     [gameState, mode, isAiThinking, playPlace],
   );
+
+  useEffect(() => {
+    if (!droppedCell) return;
+    const timer = setTimeout(() => setDroppedCell(null), 400);
+    return () => clearTimeout(timer);
+  }, [droppedCell]);
 
   useEffect(() => {
     if (!gameState?.expiredCell) return;
@@ -198,7 +227,14 @@ export default function App() {
     const timer = setTimeout(() => {
       const aiPlayer = gameState.currentPlayer;
       const move = getComputerMove(gameState, aiPlayer);
-      setGameState((prev) => (prev ? applyMove(prev, move) : prev));
+      setGameState((prev) => {
+        if (!prev) return prev;
+        const next = applyMove(prev, move);
+        if (prev.config.variant === 'gravity') {
+          setDroppedCell({ row: move.row, col: move.col });
+        }
+        return next;
+      });
       playPlace();
       setIsAiThinking(false);
     }, 400);
@@ -281,6 +317,9 @@ export default function App() {
                     Limited · K={gameState.config.liveMarkCount ?? getDefaultLiveMarkCount(gameState.config.size, gameState.config.winLength)}
                   </span>
                 )}
+                {gameState.config.variant === 'gravity' && (
+                  <span className="meta-badge gravity">Gravity</span>
+                )}
               </div>
               <SoundToggle enabled={soundEnabled} onToggle={toggleSound} compact />
               </div>
@@ -300,8 +339,10 @@ export default function App() {
 
             <GameBoard
               board={gameState.board}
+              variant={gameState.config.variant}
               winningCells={gameState.winningCells}
               expiredCell={gameState.expiredCell}
+              droppedCell={droppedCell}
               onCellClick={handleCellClick}
               disabled={gameState.status === 'finished' || isAiThinking}
             />

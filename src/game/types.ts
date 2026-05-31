@@ -2,7 +2,7 @@ export type Player = 'X' | 'O';
 export type CellValue = Player | null;
 export type Board = CellValue[][];
 export type GameMode = 'pvp' | 'pvc';
-export type GameVariant = 'standard' | 'misere' | 'limited';
+export type GameVariant = 'standard' | 'misere' | 'limited' | 'gravity';
 export type GameStatus = 'setup' | 'playing' | 'finished';
 export type AiDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -31,3 +31,8 @@ export interface Move {
   row: number;
   col: number;
 }
+
+/** Gravity mode: only column is chosen; row is computed on drop. */
+export type GravityInput = { col: number };
+
+export type MoveInput = Move | GravityInput;

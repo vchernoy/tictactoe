@@ -1,10 +1,14 @@
+import { useState } from 'react';
+import { isColumnFull } from '../game/logic';
 import { Cell } from './Cell';
-import type { Board, Move } from '../game/types';
+import type { Board, GameVariant, Move } from '../game/types';
 
 interface BoardProps {
   board: Board;
+  variant: GameVariant;
   winningCells: [number, number][];
   expiredCell: Move | null;
+  droppedCell: Move | null;
   onCellClick: (row: number, col: number) => void;
   disabled: boolean;
 }
@@ -17,31 +21,58 @@ function isExpiredCell(expiredCell: Move | null, row: number, col: number): bool
   return expiredCell?.row === row && expiredCell?.col === col;
 }
 
-export function GameBoard({ board, winningCells, expiredCell, onCellClick, disabled }: BoardProps) {
+function isDroppedCell(droppedCell: Move | null, row: number, col: number): boolean {
+  return droppedCell?.row === row && droppedCell?.col === col;
+}
+
+export function GameBoard({
+  board,
+  variant,
+  winningCells,
+  expiredCell,
+  droppedCell,
+  onCellClick,
+  disabled,
+}: BoardProps) {
   const size = board.length;
+  const isGravity = variant === 'gravity';
+  const [hoveredCol, setHoveredCol] = useState<number | null>(null);
 
   return (
     <div
-      className="board"
+      className={`board ${isGravity ? 'board-gravity' : ''}`}
       style={{
         gridTemplateColumns: `repeat(${size}, 1fr)`,
         gridTemplateRows: `repeat(${size}, 1fr)`,
       }}
+      onMouseLeave={() => setHoveredCol(null)}
     >
       {board.map((row, r) =>
-        row.map((cell, c) => (
-          <Cell
-            key={`${r}-${c}`}
-            value={cell}
-            row={r}
-            col={c}
-            isWinning={isWinningCell(winningCells, r, c)}
-            isExpiring={isExpiredCell(expiredCell, r, c)}
-            onClick={onCellClick}
-            disabled={disabled}
-            size={size}
-          />
-        )),
+        row.map((cell, c) => {
+          const columnFull = isGravity && isColumnFull(board, c);
+          const columnHovered = isGravity && hoveredCol === c && !columnFull;
+          const cellDisabled =
+            disabled || (isGravity ? columnFull : cell !== null);
+
+          return (
+            <Cell
+              key={`${r}-${c}`}
+              value={cell}
+              row={r}
+              col={c}
+              isWinning={isWinningCell(winningCells, r, c)}
+              isExpiring={isExpiredCell(expiredCell, r, c)}
+              isDropping={isDroppedCell(droppedCell, r, c)}
+              isGravity={isGravity}
+              isColumnHovered={columnHovered}
+              isColumnFull={columnFull}
+              onClick={onCellClick}
+              onColumnHover={setHoveredCol}
+              disabled={cellDisabled}
+              size={size}
+            />
+          );
+        }),
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Board, GameConfig, GameState, GameVariant, Move, Player } from './types';
+import type { Board, GameConfig, GameState, GameVariant, Move, MoveInput, Player } from './types';
 
 export function createEmptyBoard(size: number): Board {
   return Array.from({ length: size }, () => Array(size).fill(null));
@@ -52,7 +52,29 @@ export function createGameState(config: GameConfig, firstPlayer: Player): GameSt
   };
 }
 
-export function getAvailableMoves(board: Board): Move[] {
+export function getLowestEmptyRow(board: Board, col: number): number | null {
+  const size = board.length;
+  for (let r = size - 1; r >= 0; r--) {
+    if (board[r][col] === null) return r;
+  }
+  return null;
+}
+
+export function isColumnFull(board: Board, col: number): boolean {
+  return getLowestEmptyRow(board, col) === null;
+}
+
+export function getAvailableMoves(board: Board, variant: GameVariant = 'standard'): Move[] {
+  if (variant === 'gravity') {
+    const moves: Move[] = [];
+    const size = board.length;
+    for (let c = 0; c < size; c++) {
+      const row = getLowestEmptyRow(board, c);
+      if (row !== null) moves.push({ row, col: c });
+    }
+    return moves;
+  }
+
   const moves: Move[] = [];
   for (let r = 0; r < board.length; r++) {
     for (let c = 0; c < board[r].length; c++) {
@@ -60,6 +82,20 @@ export function getAvailableMoves(board: Board): Move[] {
     }
   }
   return moves;
+}
+
+export function resolveMoveInput(state: GameState, input: MoveInput): Move | null {
+  if (state.config.variant === 'gravity') {
+    const col = input.col;
+    const row = getLowestEmptyRow(state.board, col);
+    if (row === null) return null;
+    return { row, col };
+  }
+
+  if (!('row' in input)) return null;
+  const { row, col } = input;
+  if (state.board[row][col] !== null) return null;
+  return { row, col };
 }
 
 export function findWinningCells(board: Board, winLength: number): [number, number][] {
@@ -105,7 +141,8 @@ export function findWinningCells(board: Board, winLength: number): [number, numb
 }
 
 function effectiveVariant(variant: GameVariant): 'standard' | 'misere' {
-  return variant === 'misere' ? 'misere' : 'standard';
+  if (variant === 'misere') return 'misere';
+  return 'standard';
 }
 
 export function checkWinner(
@@ -119,7 +156,7 @@ export function checkWinner(
     const linePlayer = board[r][c] as Player;
     return effectiveVariant(variant) === 'misere' ? opponent(linePlayer) : linePlayer;
   }
-  if (getAvailableMoves(board).length === 0) return 'draw';
+  if (getAvailableMoves(board, variant).length === 0) return 'draw';
   return null;
 }
 
@@ -150,9 +187,11 @@ function applyLimitedExpiration(
   };
 }
 
-export function applyMove(state: GameState, move: Move): GameState {
+export function applyMove(state: GameState, input: MoveInput): GameState {
   if (state.status !== 'playing') return state;
-  if (state.board[move.row][move.col] !== null) return state;
+
+  const move = resolveMoveInput(state, input);
+  if (!move) return state;
 
   const player = state.currentPlayer;
   let board = state.board.map((row, r) =>
