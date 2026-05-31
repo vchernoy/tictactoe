@@ -153,6 +153,24 @@ export function applyMove(state: GameState, move: Move): GameState {
   if (state.config.variant === 'limited') {
     const liveMarkCount =
       state.config.liveMarkCount ?? getDefaultLiveMarkCount(state.config.size);
+
+    const immediateWinner = checkWinner(board, state.config.winLength, state.config.variant);
+    if (immediateWinner) {
+      const nextMoves = [...playerMoves[player], move];
+      const winningCells =
+        immediateWinner !== 'draw' ? findWinningCells(board, state.config.winLength) : [];
+      return {
+        ...state,
+        board,
+        playerMoves: { ...playerMoves, [player]: nextMoves },
+        expiredCell: null,
+        currentPlayer: player === 'X' ? 'O' : 'X',
+        winner: immediateWinner,
+        winningCells,
+        status: 'finished',
+      };
+    }
+
     const result = applyLimitedExpiration(board, player, playerMoves, move, liveMarkCount);
     board = result.board;
     playerMoves = result.playerMoves;
