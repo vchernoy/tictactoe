@@ -1,16 +1,36 @@
-import type { GameMode } from '../game/types';
+import type { GameMode, GameVariant } from '../game/types';
 
 interface GameSetupProps {
   size: number;
   mode: GameMode;
+  variant: GameVariant;
   onSizeChange: (size: number) => void;
   onModeChange: (mode: GameMode) => void;
+  onVariantChange: (variant: GameVariant) => void;
   onStart: () => void;
 }
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
-export function GameSetup({ size, mode, onSizeChange, onModeChange, onStart }: GameSetupProps) {
+function getWinHint(size: number, variant: GameVariant): string {
+  const n = size <= 4 ? size : 4;
+  if (variant === 'misere') {
+    return `Avoid ${n} in a row — whoever completes a line loses`;
+  }
+  return size <= 4
+    ? `Win by getting ${size} in a row`
+    : `Win by getting 4 in a row on a ${size}×${size} board`;
+}
+
+export function GameSetup({
+  size,
+  mode,
+  variant,
+  onSizeChange,
+  onModeChange,
+  onVariantChange,
+  onStart,
+}: GameSetupProps) {
   return (
     <div className="setup-panel">
       <h2 className="setup-title">Choose Your Game</h2>
@@ -40,6 +60,33 @@ export function GameSetup({ size, mode, onSizeChange, onModeChange, onStart }: G
       </div>
 
       <div className="setup-section">
+        <label className="setup-label">Rules</label>
+        <div className="variant-toggle">
+          <button
+            type="button"
+            className={`variant-btn ${variant === 'standard' ? 'active' : ''}`}
+            onClick={() => onVariantChange('standard')}
+          >
+            <span className="variant-name">Standard</span>
+            <span className="variant-desc">N in a row wins</span>
+          </button>
+          <button
+            type="button"
+            className={`variant-btn ${variant === 'misere' ? 'active' : ''}`}
+            onClick={() => onVariantChange('misere')}
+          >
+            <span className="variant-name">Misère</span>
+            <span className="variant-desc">Completing a line loses</span>
+          </button>
+        </div>
+        <p className="setup-hint variant-hint">
+          {variant === 'misere'
+            ? 'Misère: the player who gets N in a row loses. Draws still happen when the board fills with no line.'
+            : 'Standard: first player to get N in a row wins.'}
+        </p>
+      </div>
+
+      <div className="setup-section">
         <label className="setup-label">Board Size</label>
         <div className="size-grid">
           {SIZES.map((s) => (
@@ -53,11 +100,7 @@ export function GameSetup({ size, mode, onSizeChange, onModeChange, onStart }: G
             </button>
           ))}
         </div>
-        <p className="setup-hint">
-          {size <= 4
-            ? `Win by getting ${size} in a row`
-            : `Win by getting 4 in a row on a ${size}×${size} board`}
-        </p>
+        <p className="setup-hint">{getWinHint(size, variant)}</p>
       </div>
 
       <button type="button" className="start-btn" onClick={onStart}>

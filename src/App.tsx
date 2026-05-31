@@ -9,30 +9,66 @@ import {
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
-import type { GameConfig, GameMode, GameState, Player } from './game/types';
+import type { GameConfig, GameMode, GameState, GameVariant, Player } from './game/types';
 import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
 
+function getLosingPlayer(state: GameState): Player | null {
+  if (!state.winningCells.length || state.winner === 'draw' || !state.winner) return null;
+  const [r, c] = state.winningCells[0];
+  const linePlayer = state.board[r][c];
+  return linePlayer === state.winner ? null : (linePlayer as Player);
+}
+
 function getStatusMessage(state: GameState, mode: GameMode): string {
-  if (state.winner === 'draw') return "It's a draw!";
+  const isMisere = state.config.variant === 'misere';
+  const loser = isMisere ? getLosingPlayer(state) : null;
+
+  if (state.winner === 'draw') {
+    return isMisere ? "It's a draw! No one completed a line." : "It's a draw!";
+  }
+
   if (state.winner) {
     if (mode === 'pvp') {
-      return state.winner === 'X' ? 'Player 1 (X) wins!' : 'Player 2 (O) wins!';
+      const winnerLabel = state.winner === 'X' ? 'Player 1 (X)' : 'Player 2 (O)';
+      if (isMisere && loser) {
+        const loserLabel = loser === 'X' ? 'Player 1 (X)' : 'Player 2 (O)';
+        return `${winnerLabel} wins! ${loserLabel} completed the losing line.`;
+      }
+      return `${winnerLabel} wins!`;
     }
+
     const humanWon =
       (state.winner === 'X' && state.firstPlayer === 'X') ||
       (state.winner === 'O' && state.firstPlayer === 'O');
+
+    if (isMisere) {
+      if (humanWon) {
+        return loser
+          ? 'You win! The computer completed the losing line.'
+          : 'You win! 🎉';
+      }
+      return loser
+        ? 'Computer wins! You completed the losing line.'
+        : 'Computer wins!';
+    }
+
     return humanWon ? 'You win! 🎉' : 'Computer wins!';
   }
 
   if (mode === 'pvp') {
-    return state.currentPlayer === 'X' ? "Player 1's turn (X)" : "Player 2's turn (O)";
+    const turn = state.currentPlayer === 'X' ? "Player 1's turn (X)" : "Player 2's turn (O)";
+    return isMisere ? `${turn} — avoid completing a line` : turn;
   }
 
   const isHumanTurn =
     (state.currentPlayer === 'X' && state.firstPlayer === 'X') ||
     (state.currentPlayer === 'O' && state.firstPlayer === 'O');
+
+  if (isMisere) {
+    return isHumanTurn ? 'Your turn — avoid completing a line' : 'Computer is thinking...';
+  }
 
   return isHumanTurn ? 'Your turn' : 'Computer is thinking...';
 }
@@ -41,6 +77,7 @@ export default function App() {
   const [phase, setPhase] = useState<AppPhase>('setup');
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
+  const [variant, setVariant] = useState<GameVariant>('standard');
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
@@ -55,10 +92,11 @@ export default function App() {
       size,
       mode,
       winLength: getWinLength(size),
+      variant,
     };
     setGameState(createGameState(config, suggestedFirst));
     setPhase('playing');
-  }, [size, mode, suggestedFirst]);
+  }, [size, mode, variant, suggestedFirst]);
 
   const handleReroll = useCallback(() => {
     setSuggestedFirst(suggestFirstPlayer());
@@ -127,8 +165,10 @@ export default function App() {
           <GameSetup
             size={size}
             mode={mode}
+            variant={variant}
             onSizeChange={setSize}
             onModeChange={setMode}
+            onVariantChange={setVariant}
             onStart={handleStart}
           />
         )}
@@ -148,6 +188,9 @@ export default function App() {
               <div className="board-meta">
                 <span className="meta-badge">{gameState.config.size}×{gameState.config.size}</span>
                 <span className="meta-badge">{mode === 'pvp' ? '2 Players' : 'vs AI'}</span>
+                {gameState.config.variant === 'misere' && (
+                  <span className="meta-badge misere">Misère</span>
+                )}
               </div>
               <p className={`status ${gameState.winner ? 'status-finished' : ''} ${isAiThinking ? 'status-thinking' : ''}`}>
                 {getStatusMessage(gameState, mode)}

@@ -1,4 +1,4 @@
-import type { Board, GameConfig, GameState, Move, Player } from './types';
+import type { Board, GameConfig, GameState, GameVariant, Move, Player } from './types';
 
 export function createEmptyBoard(size: number): Board {
   return Array.from({ length: size }, () => Array(size).fill(null));
@@ -72,11 +72,16 @@ export function findWinningCells(board: Board, winLength: number): [number, numb
   return [];
 }
 
-export function checkWinner(board: Board, winLength: number): Player | 'draw' | null {
+export function checkWinner(
+  board: Board,
+  winLength: number,
+  variant: GameVariant = 'standard',
+): Player | 'draw' | null {
   const winningCells = findWinningCells(board, winLength);
   if (winningCells.length > 0) {
     const [r, c] = winningCells[0];
-    return board[r][c] as Player;
+    const linePlayer = board[r][c] as Player;
+    return variant === 'misere' ? opponent(linePlayer) : linePlayer;
   }
   if (getAvailableMoves(board).length === 0) return 'draw';
   return null;
@@ -90,7 +95,7 @@ export function applyMove(state: GameState, move: Move): GameState {
     row.map((cell, c) => (r === move.row && c === move.col ? state.currentPlayer : cell)),
   );
 
-  const winner = checkWinner(board, state.config.winLength);
+  const winner = checkWinner(board, state.config.winLength, state.config.variant);
   const winningCells = winner && winner !== 'draw' ? findWinningCells(board, state.config.winLength) : [];
 
   return {

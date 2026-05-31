@@ -2,12 +2,14 @@ export type Player = 'X' | 'O';
 export type CellValue = Player | null;
 export type Board = CellValue[][];
 export type GameMode = 'pvp' | 'pvc';
+export type GameVariant = 'standard' | 'misere';
 export type GameStatus = 'setup' | 'playing' | 'finished';
 
 export interface GameConfig {
   size: number;
   mode: GameMode;
   winLength: number;
+  variant: GameVariant;
 }
 
 export interface GameState {
