@@ -37,6 +37,28 @@ Mix any toggles for custom variants (e.g. Misère + Gravity, Limited + Gravity).
 - **Themes** — Midnight, Chalkboard, Wood, Neon Arcade (applied instantly via CSS variables; choice saved in `localStorage`)
 - **Sound effects** — optional; **off by default**, preference saved in `localStorage`
 
+### Shareable game links
+Copy a link from the setup screen (or **Share** during a game) to send the current configuration. Settings are encoded in URL query params; opening the link pre-fills setup. Omitted params use defaults; invalid values fall back gracefully.
+
+| Param | Values | Default |
+|-------|--------|---------|
+| `size` | 3–8 | 3 |
+| `mode` | `pvp`, `pvc` | `pvp` |
+| `misere` | 0, 1 | 0 |
+| `limited` | 0, 1 | 0 |
+| `k` | number | win length (when limited) |
+| `gravity` | 0, 1 | 0 |
+| `diff` | `easy`, `medium`, `hard` | `medium` (pvc only) |
+| `theme` | `midnight`, `chalkboard`, `wood`, `neon` | localStorage / midnight |
+
+Example:
+
+```
+https://vchernoy.xyz/tictactoe/?size=5&mode=pvc&misere=1&gravity=1&limited=1&k=4&diff=hard&theme=neon
+```
+
+Theme from the URL applies on initial load only; sound and other prefs still come from `localStorage`.
+
 ## How to Run
 
 ```bash

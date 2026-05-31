@@ -19,6 +19,8 @@ import {
 } from './game/logic';
 import { DEFAULT_RULES } from './game/rules';
 import type { AiDifficulty, GameConfig, GameMode, GameRules, GameState, GameStatus, Move, Player } from './game/types';
+import { parseParamsToConfig } from './utils/gameUrl';
+import { ShareButton } from './components/ShareButton';
 import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
@@ -105,6 +107,21 @@ export default function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [droppedCell, setDroppedCell] = useState<Move | null>(null);
+  const urlAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (urlAppliedRef.current) return;
+    urlAppliedRef.current = true;
+
+    const parsed = parseParamsToConfig(window.location.search);
+    if (!parsed.hasParams) return;
+
+    setSize(parsed.size);
+    setMode(parsed.mode);
+    setRules(parsed.rules);
+    setAiDifficulty(parsed.aiDifficulty);
+    if (parsed.theme) setTheme(parsed.theme);
+  }, [setTheme]);
 
   const handleSizeChange = useCallback((newSize: number) => {
     setSize(newSize);
@@ -317,7 +334,17 @@ export default function App() {
                   <span className="meta-badge gravity">Gravity</span>
                 )}
               </div>
-              <SoundToggle enabled={soundEnabled} onToggle={toggleSound} compact />
+              <div className="game-info-actions">
+                <ShareButton
+                  size={gameState.config.size}
+                  mode={mode}
+                  rules={gameState.config.rules}
+                  aiDifficulty={gameState.config.aiDifficulty}
+                  theme={theme}
+                  compact
+                />
+                <SoundToggle enabled={soundEnabled} onToggle={toggleSound} compact />
+              </div>
               </div>
               <p className={`status ${gameState.winner ? 'status-finished' : ''} ${isAiThinking ? 'status-thinking' : ''}`}>
                 {getStatusMessage(gameState, mode)}

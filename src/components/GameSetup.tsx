@@ -6,6 +6,7 @@ import {
 import { createRulesFromPreset, detectPreset } from '../game/rules';
 import type { AiDifficulty, GameMode, GameRules, RulesPreset } from '../game/types';
 import { THEMES, type ThemeId } from '../themes';
+import { ShareButton } from './ShareButton';
 import { SoundToggle } from './SoundToggle';
 
 interface GameSetupProps {
@@ -311,9 +312,18 @@ export function GameSetup({
         <p className="setup-hint">{getWinHint(size, rules)}</p>
       </div>
 
-      <button type="button" className="start-btn" onClick={onStart}>
-        Start Game
-      </button>
+      <div className="setup-actions">
+        <ShareButton
+          size={size}
+          mode={mode}
+          rules={rules}
+          aiDifficulty={aiDifficulty}
+          theme={theme}
+        />
+        <button type="button" className="start-btn" onClick={onStart}>
+          Start Game
+        </button>
+      </div>
     </div>
   );
 }
