@@ -4,12 +4,14 @@ export type Board = CellValue[][];
 export type GameMode = 'pvp' | 'pvc';
 export type GameVariant = 'standard' | 'misere';
 export type GameStatus = 'setup' | 'playing' | 'finished';
+export type AiDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface GameConfig {
   size: number;
   mode: GameMode;
   winLength: number;
   variant: GameVariant;
+  aiDifficulty: AiDifficulty;
 }
 
 export interface GameState {

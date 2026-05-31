@@ -1,14 +1,22 @@
-import type { GameMode, GameVariant } from '../game/types';
+import type { AiDifficulty, GameMode, GameVariant } from '../game/types';
 
 interface GameSetupProps {
   size: number;
   mode: GameMode;
   variant: GameVariant;
+  aiDifficulty: AiDifficulty;
   onSizeChange: (size: number) => void;
   onModeChange: (mode: GameMode) => void;
   onVariantChange: (variant: GameVariant) => void;
+  onAiDifficultyChange: (difficulty: AiDifficulty) => void;
   onStart: () => void;
 }
+
+const DIFFICULTIES: { id: AiDifficulty; name: string; desc: string }[] = [
+  { id: 'easy', name: 'Easy', desc: 'Mostly random, sometimes clever' },
+  { id: 'medium', name: 'Medium', desc: 'Blocks and wins, good openings' },
+  { id: 'hard', name: 'Hard', desc: 'Full minimax — very tough' },
+];
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
@@ -29,6 +37,8 @@ export function GameSetup({
   onSizeChange,
   onModeChange,
   onVariantChange,
+  aiDifficulty,
+  onAiDifficultyChange,
   onStart,
 }: GameSetupProps) {
   return (
@@ -58,6 +68,25 @@ export function GameSetup({
           </button>
         </div>
       </div>
+
+      {mode === 'pvc' && (
+        <div className="setup-section">
+          <label className="setup-label">AI Difficulty</label>
+          <div className="difficulty-toggle">
+            {DIFFICULTIES.map(({ id, name, desc }) => (
+              <button
+                key={id}
+                type="button"
+                className={`difficulty-btn ${aiDifficulty === id ? 'active' : ''}`}
+                onClick={() => onAiDifficultyChange(id)}
+              >
+                <span className="difficulty-name">{name}</span>
+                <span className="difficulty-desc">{desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="setup-section">
         <label className="setup-label">Rules</label>

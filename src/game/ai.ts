@@ -1,5 +1,5 @@
 import { applyMove, checkWinner, getAvailableMoves, opponent } from './logic';
-import type { GameState, Move, Player } from './types';
+import type { AiDifficulty, GameState, Move, Player } from './types';
 
 function evaluateBoard(state: GameState, aiPlayer: Player): number {
   const { winner, config } = state;
@@ -68,6 +68,13 @@ function getMaxDepth(state: GameState): number {
   return Math.min(empty, 4);
 }
 
+function getMediumDepth(state: GameState): number {
+  const { size } = state.config;
+  if (size <= 3) return 2;
+  if (size <= 5) return 2;
+  return 1;
+}
+
 function filterLosingMoves(state: GameState, moves: Move[], aiPlayer: Player): Move[] {
   const { winLength, variant } = state.config;
   if (variant !== 'misere') return moves;
@@ -81,7 +88,119 @@ function filterLosingMoves(state: GameState, moves: Move[], aiPlayer: Player): M
   return safe.length > 0 ? safe : moves;
 }
 
-export function getComputerMove(state: GameState, aiPlayer: Player): Move {
+function prepareMoves(state: GameState, aiPlayer: Player): Move[] {
+  let moves = getAvailableMoves(state.board);
+  if (moves.length === 0) return [];
+  return filterLosingMoves(state, moves, aiPlayer);
+}
+
+function findWinningMove(state: GameState, moves: Move[], aiPlayer: Player): Move | null {
+  const { winLength, variant } = state.config;
+  for (const move of moves) {
+    const next = applyMove({ ...state, currentPlayer: aiPlayer }, move);
+    if (checkWinner(next.board, winLength, variant) === aiPlayer) return move;
+  }
+  return null;
+}
+
+function findBlockingMove(state: GameState, moves: Move[], aiPlayer: Player): Move | null {
+  const { winLength, variant } = state.config;
+  const human = opponent(aiPlayer);
+
+  for (const move of getAvailableMoves(state.board)) {
+    const next = applyMove({ ...state, currentPlayer: human }, move);
+    if (checkWinner(next.board, winLength, variant) === human && moves.some((m) => m.row === move.row && m.col === move.col)) {
+      return move;
+    }
+  }
+  return null;
+}
+
+function pickRandom(moves: Move[]): Move {
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+function positionalScore(state: GameState, move: Move): number {
+  const size = state.config.size;
+  const center = Math.floor(size / 2);
+  const { row, col } = move;
+  if (row === center && col === center) return 3;
+  const onEdge = row === 0 || row === size - 1 || col === 0 || col === size - 1;
+  const isCorner = onEdge && (row === 0 || row === size - 1) && (col === 0 || col === size - 1);
+  if (isCorner) return 2;
+  return 1;
+}
+
+function pickPositional(state: GameState, moves: Move[]): Move {
+  let bestScore = -Infinity;
+  let best: Move[] = [];
+
+  for (const move of moves) {
+    const score = positionalScore(state, move);
+    if (score > bestScore) {
+      bestScore = score;
+      best = [move];
+    } else if (score === bestScore) {
+      best.push(move);
+    }
+  }
+
+  return pickRandom(best);
+}
+
+function pickMinimaxMove(state: GameState, moves: Move[], aiPlayer: Player, depth: number): Move {
+  const maximizing = state.currentPlayer === aiPlayer;
+  let bestScore = -Infinity;
+  let bestMoves: Move[] = [];
+
+  for (const move of moves) {
+    const next = applyMove(state, move);
+    const score = minimax(next, aiPlayer, depth - 1, -Infinity, Infinity, !maximizing);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (score === bestScore) {
+      bestMoves.push(move);
+    }
+  }
+
+  return pickRandom(bestMoves);
+}
+
+function getComputerMoveEasy(state: GameState, aiPlayer: Player): Move {
+  const moves = prepareMoves(state, aiPlayer);
+  if (moves.length === 0) return { row: 0, col: 0 };
+
+  if (Math.random() < 0.3) {
+    const win = findWinningMove(state, moves, aiPlayer);
+    if (win) return win;
+    const block = findBlockingMove(state, moves, aiPlayer);
+    if (block) return block;
+  }
+
+  return pickRandom(moves);
+}
+
+function getComputerMoveMedium(state: GameState, aiPlayer: Player): Move {
+  const moves = prepareMoves(state, aiPlayer);
+  if (moves.length === 0) return { row: 0, col: 0 };
+
+  const win = findWinningMove(state, moves, aiPlayer);
+  if (win) return win;
+
+  const block = findBlockingMove(state, moves, aiPlayer);
+  if (block) return block;
+
+  const depth = getMediumDepth(state);
+  if (depth > 0) {
+    return pickMinimaxMove(state, moves, aiPlayer, depth);
+  }
+
+  return pickPositional(state, moves);
+}
+
+function getComputerMoveHard(state: GameState, aiPlayer: Player): Move {
   let moves = getAvailableMoves(state.board);
   if (moves.length === 0) return { row: 0, col: 0 };
 
@@ -107,22 +226,19 @@ export function getComputerMove(state: GameState, aiPlayer: Player): Move {
   }
 
   const depth = getMaxDepth(state);
-  const maximizing = state.currentPlayer === aiPlayer;
+  return pickMinimaxMove(state, moves, aiPlayer, depth);
+}
 
-  let bestScore = -Infinity;
-  let bestMoves: Move[] = [];
+const MOVE_BY_DIFFICULTY: Record<
+  AiDifficulty,
+  (state: GameState, aiPlayer: Player) => Move
+> = {
+  easy: getComputerMoveEasy,
+  medium: getComputerMoveMedium,
+  hard: getComputerMoveHard,
+};
 
-  for (const move of moves) {
-    const next = applyMove(state, move);
-    const score = minimax(next, aiPlayer, depth - 1, -Infinity, Infinity, !maximizing);
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMoves = [move];
-    } else if (score === bestScore) {
-      bestMoves.push(move);
-    }
-  }
-
-  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+export function getComputerMove(state: GameState, aiPlayer: Player): Move {
+  const difficulty = state.config.aiDifficulty ?? 'hard';
+  return MOVE_BY_DIFFICULTY[difficulty](state, aiPlayer);
 }

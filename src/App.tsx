@@ -9,7 +9,7 @@ import {
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
-import type { GameConfig, GameMode, GameState, GameVariant, Player } from './game/types';
+import type { AiDifficulty, GameConfig, GameMode, GameState, GameVariant, Player } from './game/types';
 import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
@@ -78,6 +78,7 @@ export default function App() {
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
   const [variant, setVariant] = useState<GameVariant>('standard');
+  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
@@ -93,10 +94,11 @@ export default function App() {
       mode,
       winLength: getWinLength(size),
       variant,
+      aiDifficulty: mode === 'pvc' ? aiDifficulty : 'medium',
     };
     setGameState(createGameState(config, suggestedFirst));
     setPhase('playing');
-  }, [size, mode, variant, suggestedFirst]);
+  }, [size, mode, variant, aiDifficulty, suggestedFirst]);
 
   const handleReroll = useCallback(() => {
     setSuggestedFirst(suggestFirstPlayer());
@@ -169,6 +171,8 @@ export default function App() {
             onSizeChange={setSize}
             onModeChange={setMode}
             onVariantChange={setVariant}
+            aiDifficulty={aiDifficulty}
+            onAiDifficultyChange={setAiDifficulty}
             onStart={handleStart}
           />
         )}
@@ -188,6 +192,15 @@ export default function App() {
               <div className="board-meta">
                 <span className="meta-badge">{gameState.config.size}×{gameState.config.size}</span>
                 <span className="meta-badge">{mode === 'pvp' ? '2 Players' : 'vs AI'}</span>
+                {mode === 'pvc' && (
+                  <span className="meta-badge difficulty">
+                    {gameState.config.aiDifficulty === 'easy'
+                      ? 'Easy'
+                      : gameState.config.aiDifficulty === 'medium'
+                        ? 'Medium'
+                        : 'Hard'}
+                  </span>
+                )}
                 {gameState.config.variant === 'misere' && (
                   <span className="meta-badge misere">Misère</span>
                 )}
