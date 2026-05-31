@@ -4,6 +4,7 @@ import {
   getWinLength,
 } from '../game/logic';
 import type { AiDifficulty, GameMode, GameVariant } from '../game/types';
+import { THEMES, type ThemeId } from '../themes';
 
 interface GameSetupProps {
   size: number;
@@ -11,6 +12,8 @@ interface GameSetupProps {
   variant: GameVariant;
   aiDifficulty: AiDifficulty;
   liveMarkCount: number;
+  theme: ThemeId;
+  onThemeChange: (theme: ThemeId) => void;
   onSizeChange: (size: number) => void;
   onModeChange: (mode: GameMode) => void;
   onVariantChange: (variant: GameVariant) => void;
@@ -86,6 +89,8 @@ export function GameSetup({
   size,
   mode,
   variant,
+  theme,
+  onThemeChange,
   onSizeChange,
   onModeChange,
   onVariantChange,
@@ -102,6 +107,28 @@ export function GameSetup({
   return (
     <div className="setup-panel">
       <h2 className="setup-title">Choose Your Game</h2>
+
+      <div className="setup-section">
+        <label className="setup-label">Theme</label>
+        <div className="theme-grid">
+          {THEMES.map(({ id, name, swatchBg, swatchX, swatchO }) => (
+            <button
+              key={id}
+              type="button"
+              className={`theme-btn ${theme === id ? 'active' : ''}`}
+              onClick={() => onThemeChange(id)}
+              aria-pressed={theme === id}
+            >
+              <div className="theme-swatch" aria-hidden="true">
+                <span className="theme-swatch-bg" style={{ background: swatchBg }} />
+                <span className="theme-swatch-x" style={{ background: swatchX, color: swatchBg }}>X</span>
+                <span className="theme-swatch-o" style={{ background: swatchO, color: swatchBg }}>O</span>
+              </div>
+              <span className="theme-name">{name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="setup-section">
         <label className="setup-label">Game Mode</label>

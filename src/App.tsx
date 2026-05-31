@@ -3,6 +3,7 @@ import { FirstPlayerSuggestion } from './components/FirstPlayerSuggestion';
 import { GameBoard } from './components/GameBoard';
 import { GameSetup } from './components/GameSetup';
 import { getComputerMove } from './game/ai';
+import { useTheme } from './hooks/useTheme';
 import {
   applyMove,
   clampLiveMarkCount,
@@ -78,6 +79,7 @@ function getStatusMessage(state: GameState, mode: GameMode): string {
 }
 
 export default function App() {
+  const { theme, setTheme } = useTheme();
   const [phase, setPhase] = useState<AppPhase>('setup');
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
@@ -210,6 +212,8 @@ export default function App() {
             variant={variant}
             aiDifficulty={aiDifficulty}
             liveMarkCount={liveMarkCount}
+            theme={theme}
+            onThemeChange={setTheme}
             onSizeChange={handleSizeChange}
             onModeChange={setMode}
             onVariantChange={handleVariantChange}

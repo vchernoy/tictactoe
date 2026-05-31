@@ -1,0 +1,168 @@
+/* Midnight — default dark coral/teal aesthetic */
+:root,
+[data-theme='midnight'] {
+  --bg-deep: #0f0e17;
+  --bg-card: #1a1929;
+  --bg-elevated: #252438;
+  --accent-x: #ff6b6b;
+  --accent-o: #4ecdc4;
+  --accent-x-light: #ff8787;
+  --accent-o-light: #6ee7de;
+  --accent-o-dark: #3dbdb5;
+  --accent-glow-x: rgba(255, 107, 107, 0.35);
+  --accent-glow-o: rgba(78, 205, 196, 0.35);
+  --text-primary: #fffffe;
+  --text-secondary: #a7a9be;
+  --text-muted: #6b6d80;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --overlay-bg: rgba(15, 14, 23, 0.85);
+  --bg-gradient-o: rgba(78, 205, 196, 0.12);
+  --bg-gradient-x: rgba(255, 107, 107, 0.08);
+  --hover-surface: rgba(255, 255, 255, 0.06);
+  --active-o-bg: rgba(78, 205, 196, 0.08);
+  --active-o-glow: rgba(78, 205, 196, 0.15);
+  --active-x-bg: rgba(255, 107, 107, 0.1);
+  --accent-limited: #ffc16b;
+  --accent-limited-bg: rgba(255, 193, 107, 0.08);
+  --accent-limited-border: rgba(255, 193, 107, 0.35);
+  --accent-limited-active-bg: rgba(255, 193, 107, 0.1);
+  --logo-o-text: #0f0e17;
+  --cell-hover-bg: rgba(255, 255, 255, 0.08);
+  --cell-winning-bg: rgba(255, 255, 255, 0.12);
+  --cell-expiring-overlay: rgba(255, 255, 255, 0.15);
+  --secondary-hover-border: rgba(255, 255, 255, 0.15);
+  --misere-badge-border: rgba(78, 205, 196, 0.35);
+  --misere-badge-bg: rgba(78, 205, 196, 0.08);
+  --difficulty-badge-border: rgba(255, 107, 107, 0.35);
+  --difficulty-badge-bg: rgba(255, 107, 107, 0.08);
+  --swatch-bg: #1a1929;
+  --swatch-x: #ff6b6b;
+  --swatch-o: #4ecdc4;
+}
+
+/* Chalkboard — dark green slate, chalk-white text, dusty marks */
+[data-theme='chalkboard'] {
+  --bg-deep: #1a2e1a;
+  --bg-card: #243824;
+  --bg-elevated: #2f4630;
+  --accent-x: #e8dcc8;
+  --accent-o: #c4b8a4;
+  --accent-x-light: #f5efe3;
+  --accent-o-light: #ddd4c4;
+  --accent-o-dark: #a89880;
+  --accent-glow-x: rgba(232, 220, 200, 0.25);
+  --accent-glow-o: rgba(196, 184, 164, 0.25);
+  --text-primary: #f0ebe0;
+  --text-secondary: #b8c4b0;
+  --text-muted: #7a8f76;
+  --border: rgba(240, 235, 224, 0.1);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --overlay-bg: rgba(26, 46, 26, 0.9);
+  --bg-gradient-o: rgba(196, 184, 164, 0.08);
+  --bg-gradient-x: rgba(232, 220, 200, 0.06);
+  --hover-surface: rgba(240, 235, 224, 0.05);
+  --active-o-bg: rgba(196, 184, 164, 0.12);
+  --active-o-glow: rgba(196, 184, 164, 0.2);
+  --active-x-bg: rgba(232, 220, 200, 0.1);
+  --accent-limited: #d4c090;
+  --accent-limited-bg: rgba(212, 192, 144, 0.1);
+  --accent-limited-border: rgba(212, 192, 144, 0.35);
+  --accent-limited-active-bg: rgba(212, 192, 144, 0.15);
+  --logo-o-text: #1a2e1a;
+  --cell-hover-bg: rgba(240, 235, 224, 0.06);
+  --cell-winning-bg: rgba(240, 235, 224, 0.1);
+  --cell-expiring-overlay: rgba(240, 235, 224, 0.12);
+  --secondary-hover-border: rgba(240, 235, 224, 0.12);
+  --misere-badge-border: rgba(196, 184, 164, 0.4);
+  --misere-badge-bg: rgba(196, 184, 164, 0.1);
+  --difficulty-badge-border: rgba(232, 220, 200, 0.35);
+  --difficulty-badge-bg: rgba(232, 220, 200, 0.08);
+  --swatch-bg: #243824;
+  --swatch-x: #e8dcc8;
+  --swatch-o: #c4b8a4;
+}
+
+/* Wood — warm browns, classic wooden board */
+[data-theme='wood'] {
+  --bg-deep: #2c1810;
+  --bg-card: #3d2518;
+  --bg-elevated: #4a3020;
+  --accent-x: #c45c3e;
+  --accent-o: #d4a853;
+  --accent-x-light: #e07858;
+  --accent-o-light: #e8c070;
+  --accent-o-dark: #b89040;
+  --accent-glow-x: rgba(196, 92, 62, 0.35);
+  --accent-glow-o: rgba(212, 168, 83, 0.35);
+  --text-primary: #f5e6d3;
+  --text-secondary: #c9b49a;
+  --text-muted: #8a7560;
+  --border: rgba(245, 230, 211, 0.1);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --overlay-bg: rgba(44, 24, 16, 0.88);
+  --bg-gradient-o: rgba(212, 168, 83, 0.1);
+  --bg-gradient-x: rgba(196, 92, 62, 0.08);
+  --hover-surface: rgba(245, 230, 211, 0.06);
+  --active-o-bg: rgba(212, 168, 83, 0.12);
+  --active-o-glow: rgba(212, 168, 83, 0.18);
+  --active-x-bg: rgba(196, 92, 62, 0.12);
+  --accent-limited: #e8b860;
+  --accent-limited-bg: rgba(232, 184, 96, 0.1);
+  --accent-limited-border: rgba(232, 184, 96, 0.35);
+  --accent-limited-active-bg: rgba(232, 184, 96, 0.15);
+  --logo-o-text: #2c1810;
+  --cell-hover-bg: rgba(245, 230, 211, 0.07);
+  --cell-winning-bg: rgba(245, 230, 211, 0.12);
+  --cell-expiring-overlay: rgba(245, 230, 211, 0.14);
+  --secondary-hover-border: rgba(245, 230, 211, 0.15);
+  --misere-badge-border: rgba(212, 168, 83, 0.4);
+  --misere-badge-bg: rgba(212, 168, 83, 0.1);
+  --difficulty-badge-border: rgba(196, 92, 62, 0.4);
+  --difficulty-badge-bg: rgba(196, 92, 62, 0.1);
+  --swatch-bg: #3d2518;
+  --swatch-x: #c45c3e;
+  --swatch-o: #d4a853;
+}
+
+/* Neon Arcade — deep purple/black, bright pink/cyan glow */
+[data-theme='neon'] {
+  --bg-deep: #0a0014;
+  --bg-card: #140028;
+  --bg-elevated: #1e0038;
+  --accent-x: #ff2d95;
+  --accent-o: #00f5ff;
+  --accent-x-light: #ff6bb8;
+  --accent-o-light: #66faff;
+  --accent-o-dark: #00c4cc;
+  --accent-glow-x: rgba(255, 45, 149, 0.5);
+  --accent-glow-o: rgba(0, 245, 255, 0.5);
+  --text-primary: #f0e6ff;
+  --text-secondary: #b088d0;
+  --text-muted: #6a5090;
+  --border: rgba(255, 45, 149, 0.15);
+  --shadow: 0 8px 32px rgba(255, 45, 149, 0.15), 0 0 60px rgba(0, 245, 255, 0.05);
+  --overlay-bg: rgba(10, 0, 20, 0.92);
+  --bg-gradient-o: rgba(0, 245, 255, 0.12);
+  --bg-gradient-x: rgba(255, 45, 149, 0.1);
+  --hover-surface: rgba(255, 45, 149, 0.06);
+  --active-o-bg: rgba(0, 245, 255, 0.1);
+  --active-o-glow: rgba(0, 245, 255, 0.25);
+  --active-x-bg: rgba(255, 45, 149, 0.12);
+  --accent-limited: #ffaa00;
+  --accent-limited-bg: rgba(255, 170, 0, 0.1);
+  --accent-limited-border: rgba(255, 170, 0, 0.4);
+  --accent-limited-active-bg: rgba(255, 170, 0, 0.15);
+  --logo-o-text: #0a0014;
+  --cell-hover-bg: rgba(0, 245, 255, 0.08);
+  --cell-winning-bg: rgba(255, 45, 149, 0.15);
+  --cell-expiring-overlay: rgba(255, 45, 149, 0.2);
+  --secondary-hover-border: rgba(0, 245, 255, 0.2);
+  --misere-badge-border: rgba(0, 245, 255, 0.4);
+  --misere-badge-bg: rgba(0, 245, 255, 0.1);
+  --difficulty-badge-border: rgba(255, 45, 149, 0.4);
+  --difficulty-badge-bg: rgba(255, 45, 149, 0.1);
+  --swatch-bg: #140028;
+  --swatch-x: #ff2d95;
+  --swatch-o: #00f5ff;
+}
