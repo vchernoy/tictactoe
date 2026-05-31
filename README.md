@@ -1,31 +1,42 @@
 # Tic Tac Toe
 
-A beautiful web-based Tic Tac Toe game built with React and Vite.
+A web-based Tic Tac Toe game with multiple rules, board sizes, themes, and AI difficulty levels. Built with React and Vite.
+
+**Play live:** [vchernoy.github.io/tictactoe](https://vchernoy.github.io/tictactoe/) · [vchernoy.xyz/tictactoe](https://vchernoy.xyz/tictactoe/)
 
 ## Features
 
-- **Two game modes**: Human vs Human (local) and Human vs Computer (AI)
-- **Flexible board sizes**: 3×3 through 8×8
-- **First player suggestion**: Random coin flip with re-roll option
-- **Smart AI**: Minimax with alpha-beta pruning (perfect on 3×3, heuristic on larger boards)
-- **Win detection**: N-in-a-row for small boards, 4-in-a-row for boards 5×5 and up
+### Game modes
+- **Human vs Human** — local two-player on one device
+- **Human vs Computer** — play against the AI
+
+### Rules variants
+- **Standard** — first to N in a row wins
+- **Misère** — completing a line loses
+- **Limited Moves** — each player keeps only their last K marks (adjustable K stepper)
+- **Gravity** — drop marks into columns; they fall to the bottom
+
+### Board & AI
+- Board sizes **3×3 through 8×8**
+- Win length: N-in-a-row on boards ≤4×4; **4-in-a-row** on larger boards
+- **AI difficulty** (vs computer): Easy, Medium, Hard — from mostly random to full minimax with alpha-beta pruning
+- **First player suggestion** — random coin flip with re-roll before each game
+
+### Look & feel
+- **Themes** — Midnight, Chalkboard, Wood, Neon Arcade (applied instantly via CSS variables; choice saved in `localStorage`)
+- **Sound effects** — optional; **off by default**, preference saved in `localStorage`
 
 ## How to Run
 
 ```bash
-# Install dependencies (first time only)
-npm install
-
-# Start the development server
-npm run dev
+npm install    # first time only
+npm run dev    # dev server (usually http://localhost:5173)
+npm run build  # production build → dist/
 ```
 
-Open the URL shown in the terminal (usually `http://localhost:5173`) in your browser.
-
-## Production Build
+Preview a production build locally:
 
 ```bash
-npm run build
 npm run preview
 ```
 
@@ -51,5 +62,5 @@ If the live site shows `<script type="module" src="/src/main.tsx">`, Pages is st
 ## Tech Stack
 
 - React 19 + TypeScript
-- Vite 8
+- Vite 6
 - Pure CSS (no UI framework)
