@@ -67,6 +67,17 @@ https://tictactoe.vchernoy.xyz/?size=5&mode=pvc&gravity=1&limited=1&compact=1&k=
 
 Theme from the URL applies on initial load only; sound and other prefs still come from `localStorage`.
 
+## Link previews (Open Graph)
+
+Sharing **https://tictactoe.vchernoy.xyz/** in Slack, iMessage, Discord, or Twitter shows a preview card with title, description, and image. Meta tags live in `index.html`; the share image is `public/og-image.png` (1200×630, copied to `dist/` on build). Source SVG: `public/og-image.svg`.
+
+To refresh cached previews after changes:
+
+- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
+- [Twitter Card Validator](https://cards-dev.twitter.com/validator) (or post a new link)
+- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
+- [opengraph.xyz](https://www.opengraph.xyz/)
+
 ## How to Run
 
 ```bash

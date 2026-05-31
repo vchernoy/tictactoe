@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1929"/>
+      <stop offset="100%" stop-color="#12111c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="30%" cy="50%" r="45%">
+      <stop offset="0%" stop-color="#863bff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#863bff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- 3×3 board -->
+  <g transform="translate(120 115)">
+    <rect x="0" y="0" width="400" height="400" rx="20" fill="#252438" stroke="#3d3a52" stroke-width="3"/>
+    <!-- grid -->
+    <line x1="133" y1="20" x2="133" y2="380" stroke="#3d3a52" stroke-width="4"/>
+    <line x1="267" y1="20" x2="267" y2="380" stroke="#3d3a52" stroke-width="4"/>
+    <line x1="20" y1="133" x2="380" y2="133" stroke="#3d3a52" stroke-width="4"/>
+    <line x1="20" y1="267" x2="380" y2="267" stroke="#3d3a52" stroke-width="4"/>
+
+    <!-- X top-left -->
+    <g stroke="#ff6b6b" stroke-width="14" stroke-linecap="round">
+      <line x1="45" y1="45" x2="108" y2="108"/>
+      <line x1="108" y1="45" x2="45" y2="108"/>
+    </g>
+    <!-- O top-center -->
+    <circle cx="200" cy="76" r="38" fill="none" stroke="#4ecdc4" stroke-width="14"/>
+    <!-- X top-right -->
+    <g stroke="#ff6b6b" stroke-width="14" stroke-linecap="round">
+      <line x1="312" y1="45" x2="375" y2="108"/>
+      <line x1="375" y1="45" x2="312" y2="108"/>
+    </g>
+    <!-- O middle-left -->
+    <circle cx="76" cy="200" r="38" fill="none" stroke="#4ecdc4" stroke-width="14"/>
+    <!-- X center (winning diagonal) -->
+    <g stroke="#ff6b6b" stroke-width="14" stroke-linecap="round" filter="url(#soft)">
+      <line x1="178" y1="178" x2="222" y2="222"/>
+      <line x1="222" y1="178" x2="178" y2="222"/>
+    </g>
+    <!-- O middle-right -->
+    <circle cx="324" cy="200" r="38" fill="none" stroke="#4ecdc4" stroke-width="14"/>
+    <!-- X bottom-left -->
+    <g stroke="#ff6b6b" stroke-width="14" stroke-linecap="round">
+      <line x1="45" y1="312" x2="108" y2="375"/>
+      <line x1="108" y1="312" x2="45" y2="375"/>
+    </g>
+    <!-- O bottom-center -->
+    <circle cx="200" cy="344" r="38" fill="none" stroke="#4ecdc4" stroke-width="14"/>
+    <!-- X bottom-right (winning diagonal) -->
+    <g stroke="#ff6b6b" stroke-width="14" stroke-linecap="round">
+      <line x1="312" y1="312" x2="375" y2="375"/>
+      <line x1="375" y1="312" x2="312" y2="375"/>
+    </g>
+
+    <!-- winning diagonal highlight -->
+    <line x1="45" y1="45" x2="375" y2="375" stroke="#863bff" stroke-width="3" stroke-opacity="0.35" stroke-dasharray="8 8"/>
+  </g>
+
+  <!-- Title -->
+  <text x="620" y="260" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="88" font-weight="700" fill="#f0eef8">Tic Tac Toe</text>
+  <text x="620" y="340" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="32" fill="#9b97b0">Play with custom rules</text>
+  <text x="620" y="395" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="28" fill="#6b6780">Misère · Limited · Gravity · AI &amp; more</text>
+
+  <!-- URL -->
+  <text x="620" y="480" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" fill="#863bff">tictactoe.vchernoy.xyz</text>
+</svg>
