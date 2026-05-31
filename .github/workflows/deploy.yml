@@ -5,24 +5,23 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Publish built dist/ to gh-pages; Pages must serve that branch (see README).
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -33,23 +32,28 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Deploy to gh-pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          enablement: true
+          branch: gh-pages
+          folder: dist
+          clean: true
+          single-commit: true
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Verify live site serves production build
+        run: |
+          for url in \
+            "https://vchernoy.github.io/tictactoe/" \
+            "https://vchernoy.xyz/tictactoe/"; do
+            html=$(curl -fsSL --max-time 30 "$url")
+            if echo "$html" | grep -q '/src/main.tsx'; then
+              echo "::error::${url} still serves unbuilt source index.html."
+              echo "In github.com/vchernoy/tictactoe → Settings → Pages, set Source to Deploy from branch → gh-pages → / (root), then re-run this workflow."
+              exit 1
+            fi
+            if ! echo "$html" | grep -q '/tictactoe/assets/index-'; then
+              echo "::error::${url} does not reference built /tictactoe/assets/index-*.js."
+              exit 1
+            fi
+            echo "OK: $url serves production index.html"
+          done

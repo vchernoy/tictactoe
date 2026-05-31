@@ -31,11 +31,30 @@ npm run preview
 
 ## GitHub Pages
 
-The app is configured for [GitHub Pages](https://pages.github.com/) at **https://vchernoy.github.io/tictactoe/**.
+The app is configured for [GitHub Pages](https://pages.github.com/) project-site URLs:
 
-Push to `main` (or run the **Deploy to GitHub Pages** workflow manually). The workflow in `.github/workflows/deploy.yml` builds with `npm ci` and `npm run build`, then publishes `dist/`.
+- **https://vchernoy.github.io/tictactoe/**
+- **https://vchernoy.xyz/tictactoe/** (custom domain; same deployment as above)
 
-The workflow uses `actions/configure-pages` with `enablement: true` to try to enable GitHub Pages automatically on first deploy. If deployment still fails with a Pages setup error, open **Settings → Pages** in the repo and set **Build and deployment → Source** to **GitHub Actions**, then re-run the workflow.
+`vite.config.ts` sets `base: '/tictactoe/'` so asset paths work on both hosts.
+
+### Deploy
+
+Push to `main` (or run **Deploy to GitHub Pages** manually). The workflow builds with `npm ci` and `npm run build`, then pushes the contents of `dist/` to the **`gh-pages`** branch.
+
+### One-time Pages setting (required)
+
+If the live site shows `<script type="module" src="/src/main.tsx">`, GitHub Pages is serving the **`main`** branch source tree instead of the built site.
+
+In **github.com/vchernoy/tictactoe → Settings → Pages**:
+
+1. **Build and deployment → Source:** **Deploy from a branch**
+2. **Branch:** **`gh-pages`**, folder **`/ (root)`**
+3. Save, wait ~1 minute, then re-run the deploy workflow if needed.
+
+Do **not** use **main** as the publish branch — that exposes unbuilt `index.html` and `/src/*`.
+
+**Custom domain:** keep **vchernoy.xyz** configured under the same Pages settings (or a `CNAME` on `gh-pages`). No extra reverse-proxy to the repo root is needed; both URLs should serve the `gh-pages` artifact.
 
 ## Tech Stack
 
