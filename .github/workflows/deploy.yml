@@ -52,19 +52,16 @@ jobs:
       - name: Verify live site serves production build
         run: |
           sleep 15
-          for url in \
-            "https://vchernoy.github.io/tictactoe/" \
-            "https://vchernoy.xyz/tictactoe/"; do
-            html=$(curl -fsSL --max-time 30 "$url")
-            if echo "$html" | grep -q '/src/main.tsx'; then
-              echo "::error::${url} still serves unbuilt source index.html."
-              echo "Pages is likely still deploying from the main branch (pages-build-deployment)."
-              echo "In Settings → Pages → Build and deployment → Source, choose GitHub Actions, then re-run this workflow."
-              exit 1
-            fi
-            if ! echo "$html" | grep -q '/tictactoe/assets/index-'; then
-              echo "::error::${url} does not reference built /tictactoe/assets/index-*.js."
-              exit 1
-            fi
-            echo "OK: $url serves production index.html"
-          done
+          url="https://tictactoe.vchernoy.xyz/"
+          html=$(curl -fsSL --max-time 30 "$url")
+          if echo "$html" | grep -q '/src/main.tsx'; then
+            echo "::error::${url} still serves unbuilt source index.html."
+            echo "Pages is likely still deploying from the main branch (pages-build-deployment)."
+            echo "In Settings → Pages → Build and deployment → Source, choose GitHub Actions, then re-run this workflow."
+            exit 1
+          fi
+          if ! echo "$html" | grep -q '/assets/index-'; then
+            echo "::error::${url} does not reference built /assets/index-*.js."
+            exit 1
+          fi
+          echo "OK: $url serves production index.html"

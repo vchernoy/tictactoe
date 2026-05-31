@@ -2,7 +2,7 @@
 
 A web-based Tic Tac Toe game with multiple rules, board sizes, themes, and AI difficulty levels. Built with React and Vite.
 
-**Play live:** [vchernoy.github.io/tictactoe](https://vchernoy.github.io/tictactoe/) · [vchernoy.xyz/tictactoe](https://vchernoy.xyz/tictactoe/)
+**Play live:** [tictactoe.vchernoy.xyz](https://tictactoe.vchernoy.xyz)
 
 ## Features
 
@@ -57,7 +57,7 @@ Copy a link from the setup screen (or **Share** during a game) to send the curre
 Example:
 
 ```
-https://vchernoy.xyz/tictactoe/?size=5&mode=pvc&gravity=1&limited=1&compact=1&k=4&diff=hard&theme=neon
+https://tictactoe.vchernoy.xyz/?size=5&mode=pvc&gravity=1&limited=1&compact=1&k=4&diff=hard&theme=neon
 ```
 
 Theme from the URL applies on initial load only; sound and other prefs still come from `localStorage`.
@@ -78,22 +78,27 @@ npm run preview
 
 ## GitHub Pages
 
-The app is configured for [GitHub Pages](https://pages.github.com/) project-site URLs:
+The app is deployed to [GitHub Pages](https://pages.github.com/) at:
 
-- **https://vchernoy.github.io/tictactoe/**
-- **https://vchernoy.xyz/tictactoe/** (custom domain; same deployment as above)
+- **https://tictactoe.vchernoy.xyz** (primary — custom subdomain)
 
-`vite.config.ts` sets `base: '/tictactoe/'` so asset paths work on both hosts.
+`vite.config.ts` sets `base: '/'` for root hosting on the subdomain. `public/CNAME` tells GitHub Pages which custom domain to use.
+
+Previously the app was served at `https://vchernoy.xyz/tictactoe/` and `https://vchernoy.github.io/tictactoe/`. Redirecting the old path to the subdomain is a manual Cloudflare rule (not in this repo).
 
 ### Deploy
 
 Push to `main` (or run **Deploy to GitHub Pages** manually). The workflow runs `npm ci`, `npm run build`, uploads `dist/`, and deploys via GitHub Actions.
 
-### One-time Pages setting (required)
+### One-time Pages settings (required)
 
-In **github.com/vchernoy/tictactoe → Settings → Pages → Build and deployment → Source**, choose **GitHub Actions** (not “Deploy from a branch”).
+1. In **github.com/vchernoy/tictactoe → Settings → Pages → Build and deployment → Source**, choose **GitHub Actions** (not “Deploy from a branch”).
 
-If the live site shows `<script type="module" src="/src/main.tsx">`, Pages is still serving the **main** branch (via the built-in `pages-build-deployment` Jekyll workflow) instead of the workflow artifact. In **Settings → Pages → Source**, choose **GitHub Actions** (not “Deploy from a branch → main”), then re-run **Deploy to GitHub Pages**. The deploy workflow verifies both URLs after each release.
+2. In **Settings → Pages → Custom domain**, enter `tictactoe.vchernoy.xyz` and save. GitHub will create/update the `CNAME` file on deploy; the repo also includes `public/CNAME` so it is copied into `dist/` on each build.
+
+3. **DNS** (Cloudflare or your registrar): add a CNAME record `tictactoe` → `vchernoy.github.io`. If proxied through Cloudflare, use SSL mode **Full (strict)**.
+
+If the live site shows `<script type="module" src="/src/main.tsx">`, Pages is still serving the **main** branch (via the built-in `pages-build-deployment` Jekyll workflow) instead of the workflow artifact. In **Settings → Pages → Source**, choose **GitHub Actions** (not “Deploy from a branch → main”), then re-run **Deploy to GitHub Pages**. The deploy workflow verifies the live URL after each release.
 
 ## Tech Stack
 
