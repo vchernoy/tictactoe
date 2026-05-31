@@ -27,8 +27,44 @@ const DIFFICULTIES: { id: AiDifficulty; name: string; desc: string }[] = [
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
-function getLiveMarkOptions(minK: number, maxK: number): number[] {
-  return Array.from({ length: maxK - minK + 1 }, (_, i) => minK + i);
+interface LiveMarkStepperProps {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}
+
+function LiveMarkStepper({ value, min, max, onChange }: LiveMarkStepperProps) {
+  return (
+    <div className="live-mark-stepper">
+      <button
+        type="button"
+        className="live-mark-stepper-btn"
+        onClick={() => onChange(value - 1)}
+        disabled={value <= min}
+        aria-label="Decrease live mark count"
+      >
+        −
+      </button>
+      <div className="live-mark-stepper-value-wrap">
+        <span className="live-mark-stepper-value" aria-live="polite">
+          {value}
+        </span>
+        <span className="live-mark-stepper-range">
+          {min} – {max}
+        </span>
+      </div>
+      <button
+        type="button"
+        className="live-mark-stepper-btn"
+        onClick={() => onChange(value + 1)}
+        disabled={value >= max}
+        aria-label="Increase live mark count"
+      >
+        +
+      </button>
+    </div>
+  );
 }
 
 function getWinHint(size: number, variant: GameVariant): string {
@@ -62,8 +98,6 @@ export function GameSetup({
   const winLength = getWinLength(size);
   const minK = getLiveMarkMin(size, winLength);
   const maxK = getLiveMarkMax(size);
-  const liveMarkOptions = getLiveMarkOptions(minK, maxK);
-  const useLiveMarkSelect = liveMarkOptions.length > 8;
 
   return (
     <div className="setup-panel">
@@ -152,35 +186,12 @@ export function GameSetup({
       {variant === 'limited' && (
         <div className="setup-section">
           <label className="setup-label">Live Mark Count (K)</label>
-          {useLiveMarkSelect ? (
-            <select
-              className="live-mark-select"
-              value={liveMarkCount}
-              onChange={(e) => onLiveMarkCountChange(Number(e.target.value))}
-            >
-              {liveMarkOptions.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div
-              className="live-mark-grid"
-              style={{ gridTemplateColumns: `repeat(${Math.min(liveMarkOptions.length, 4)}, 1fr)` }}
-            >
-              {liveMarkOptions.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  className={`live-mark-btn ${liveMarkCount === k ? 'active' : ''}`}
-                  onClick={() => onLiveMarkCountChange(k)}
-                >
-                  {k}
-                </button>
-              ))}
-            </div>
-          )}
+          <LiveMarkStepper
+            value={liveMarkCount}
+            min={minK}
+            max={maxK}
+            onChange={onLiveMarkCountChange}
+          />
           <p className="setup-hint">
             Each player keeps their last K marks (K = {minK} … {maxK}). Oldest disappears.
           </p>

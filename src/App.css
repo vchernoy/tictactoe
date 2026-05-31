@@ -441,56 +441,63 @@
   background: rgba(255, 193, 107, 0.08);
 }
 
-.live-mark-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
+.live-mark-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
 }
 
-.live-mark-btn {
-  padding: 0.75rem;
+.live-mark-stepper-btn {
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
   background: var(--bg-elevated);
   border: 2px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1;
   transition: all var(--transition);
 }
 
-.live-mark-btn:hover:not(:disabled) {
+.live-mark-stepper-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
 }
 
-.live-mark-btn.active {
+.live-mark-stepper-btn:active:not(:disabled) {
   border-color: #ffc16b;
   background: rgba(255, 193, 107, 0.1);
   color: #ffc16b;
 }
 
-.live-mark-btn:disabled {
+.live-mark-stepper-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.live-mark-select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: var(--bg-elevated);
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all var(--transition);
+.live-mark-stepper-value-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 4rem;
 }
 
-.live-mark-select:hover,
-.live-mark-select:focus {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: #ffc16b;
-  outline: none;
+.live-mark-stepper-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffc16b;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-mark-stepper-range {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .status {
