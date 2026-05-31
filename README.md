@@ -10,11 +10,22 @@ A web-based Tic Tac Toe game with multiple rules, board sizes, themes, and AI di
 - **Human vs Human** — local two-player on one device
 - **Human vs Computer** — play against the AI
 
-### Rules variants
-- **Standard** — first to N in a row wins
-- **Misère** — completing a line loses
-- **Limited Moves** — each player keeps only their last K marks (adjustable K stepper)
+### Composable rules
+Rules combine via independent toggles (or quick presets):
+
+| Preset | Misère | Limited | Gravity |
+|--------|--------|---------|---------|
+| Classic | — | — | — |
+| Misère | ✓ | — | — |
+| Connect-4 | — | — | ✓ |
+| Limited | — | ✓ (K = win length) | — |
+| Chaos | ✓ | ✓ (min K) | — |
+
+- **Misère** — completing a line loses (opponent wins)
+- **Limited moves** — each player keeps only their last K marks (adjustable K stepper)
 - **Gravity** — drop marks into columns; they fall to the bottom
+
+Mix any toggles for custom variants (e.g. Misère + Gravity, Limited + Gravity).
 
 ### Board & AI
 - Board sizes **3×3 through 8×8**

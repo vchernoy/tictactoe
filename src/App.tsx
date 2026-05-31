@@ -17,7 +17,8 @@ import {
   getWinLength,
   suggestFirstPlayer,
 } from './game/logic';
-import type { AiDifficulty, GameConfig, GameMode, GameState, GameStatus, GameVariant, Move, Player } from './game/types';
+import { DEFAULT_RULES } from './game/rules';
+import type { AiDifficulty, GameConfig, GameMode, GameRules, GameState, GameStatus, Move, Player } from './game/types';
 import './App.css';
 
 type AppPhase = 'setup' | 'first-player' | 'playing';
@@ -29,21 +30,27 @@ function getLosingPlayer(state: GameState): Player | null {
   return linePlayer === state.winner ? null : (linePlayer as Player);
 }
 
+function getTurnHint(rules: GameRules): string {
+  const hints: string[] = [];
+  if (rules.misere) hints.push('avoid completing a line');
+  if (rules.gravity) hints.push('pick a column to drop');
+  return hints.length > 0 ? hints.join(', ') : '';
+}
+
 function getStatusMessage(state: GameState, mode: GameMode): string {
-  const isMisere = state.config.variant === 'misere';
-  const isGravity = state.config.variant === 'gravity';
-  const loser = isMisere ? getLosingPlayer(state) : null;
+  const { rules } = state.config;
+  const loser = rules.misere ? getLosingPlayer(state) : null;
 
   if (state.winner === 'draw') {
-    if (isMisere) return "It's a draw! No one completed a line.";
-    if (isGravity) return "It's a draw! All columns are full.";
+    if (rules.misere) return "It's a draw! No one completed a line.";
+    if (rules.gravity) return "It's a draw! All columns are full.";
     return "It's a draw!";
   }
 
   if (state.winner) {
     if (mode === 'pvp') {
       const winnerLabel = state.winner === 'X' ? 'Player 1 (X)' : 'Player 2 (O)';
-      if (isMisere && loser) {
+      if (rules.misere && loser) {
         const loserLabel = loser === 'X' ? 'Player 1 (X)' : 'Player 2 (O)';
         return `${winnerLabel} wins! ${loserLabel} completed the losing line.`;
       }
@@ -54,7 +61,7 @@ function getStatusMessage(state: GameState, mode: GameMode): string {
       (state.winner === 'X' && state.firstPlayer === 'X') ||
       (state.winner === 'O' && state.firstPlayer === 'O');
 
-    if (isMisere) {
+    if (rules.misere) {
       if (humanWon) {
         return loser
           ? 'You win! The computer completed the losing line.'
@@ -68,26 +75,21 @@ function getStatusMessage(state: GameState, mode: GameMode): string {
     return humanWon ? 'You win! 🎉' : 'Computer wins!';
   }
 
+  const turnHint = getTurnHint(rules);
+
   if (mode === 'pvp') {
     const turn = state.currentPlayer === 'X' ? "Player 1's turn (X)" : "Player 2's turn (O)";
-    if (isMisere) return `${turn} — avoid completing a line`;
-    if (isGravity) return `${turn} — pick a column to drop`;
-    return turn;
+    return turnHint ? `${turn} — ${turnHint}` : turn;
   }
 
   const isHumanTurn =
     (state.currentPlayer === 'X' && state.firstPlayer === 'X') ||
     (state.currentPlayer === 'O' && state.firstPlayer === 'O');
 
-  if (isMisere) {
-    return isHumanTurn ? 'Your turn — avoid completing a line' : 'Computer is thinking...';
+  if (isHumanTurn) {
+    return turnHint ? `Your turn — ${turnHint}` : 'Your turn';
   }
-
-  if (isGravity) {
-    return isHumanTurn ? 'Your turn — pick a column to drop' : 'Computer is thinking...';
-  }
-
-  return isHumanTurn ? 'Your turn' : 'Computer is thinking...';
+  return 'Computer is thinking...';
 }
 
 export default function App() {
@@ -97,10 +99,7 @@ export default function App() {
   const [phase, setPhase] = useState<AppPhase>('setup');
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<GameMode>('pvp');
-  const [variant, setVariant] = useState<GameVariant>('standard');
-  const [liveMarkCount, setLiveMarkCount] = useState(
-    getDefaultLiveMarkCount(3, getWinLength(3)),
-  );
+  const [rules, setRules] = useState<GameRules>({ ...DEFAULT_RULES });
   const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [suggestedFirst, setSuggestedFirst] = useState<Player>('X');
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -113,19 +112,15 @@ export default function App() {
     const minK = getLiveMarkMin(newSize, winLength);
     const maxK = getLiveMarkMax(newSize);
     const defaultK = getDefaultLiveMarkCount(newSize, winLength);
-    setLiveMarkCount((prev) => (prev < minK || prev > maxK ? defaultK : prev));
+    setRules((prev) => ({
+      ...prev,
+      liveMarkCount:
+        prev.liveMarkCount < minK || prev.liveMarkCount > maxK ? defaultK : prev.liveMarkCount,
+    }));
   }, []);
 
-  const handleVariantChange = useCallback((newVariant: GameVariant) => {
-    setVariant(newVariant);
-    if (newVariant === 'limited') {
-      const winLength = getWinLength(size);
-      setLiveMarkCount(getDefaultLiveMarkCount(size, winLength));
-    }
-  }, [size]);
-
-  const handleLiveMarkCountChange = useCallback((count: number) => {
-    setLiveMarkCount(count);
+  const handleRulesChange = useCallback((newRules: GameRules) => {
+    setRules(newRules);
   }, []);
 
   const handleStart = useCallback(() => {
@@ -135,19 +130,23 @@ export default function App() {
 
   const handleAcceptFirst = useCallback(() => {
     const winLength = getWinLength(size);
+    const resolvedRules = rules.limited
+      ? {
+          ...rules,
+          liveMarkCount: clampLiveMarkCount(rules.liveMarkCount, size, winLength),
+        }
+      : rules;
+
     const config: GameConfig = {
       size,
       mode,
       winLength,
-      variant,
+      rules: resolvedRules,
       aiDifficulty: mode === 'pvc' ? aiDifficulty : 'medium',
-      ...(variant === 'limited'
-        ? { liveMarkCount: clampLiveMarkCount(liveMarkCount, size, winLength) }
-        : {}),
     };
     setGameState(createGameState(config, suggestedFirst));
     setPhase('playing');
-  }, [size, mode, variant, aiDifficulty, liveMarkCount, suggestedFirst]);
+  }, [size, mode, rules, aiDifficulty, suggestedFirst]);
 
   const handleReroll = useCallback(() => {
     setSuggestedFirst(suggestFirstPlayer());
@@ -164,10 +163,9 @@ export default function App() {
 
       if (!isHumanTurn) return;
 
-      const input =
-        gameState.config.variant === 'gravity' ? { col } : { row, col };
+      const input = gameState.config.rules.gravity ? { col } : { row, col };
 
-      if (gameState.config.variant === 'gravity') {
+      if (gameState.config.rules.gravity) {
         const dropRow = getLowestEmptyRow(gameState.board, col);
         if (dropRow !== null) {
           setDroppedCell({ row: dropRow, col });
@@ -209,7 +207,7 @@ export default function App() {
       if (gameState.winner === 'draw') {
         playDraw();
       } else if (gameState.winner) {
-        playWin(gameState.config.variant === 'misere');
+        playWin(gameState.config.rules.misere);
       }
     }
   }, [gameState, playDraw, playWin]);
@@ -230,7 +228,7 @@ export default function App() {
       setGameState((prev) => {
         if (!prev) return prev;
         const next = applyMove(prev, move);
-        if (prev.config.variant === 'gravity') {
+        if (prev.config.rules.gravity) {
           setDroppedCell({ row: move.row, col: move.col });
         }
         return next;
@@ -268,17 +266,15 @@ export default function App() {
           <GameSetup
             size={size}
             mode={mode}
-            variant={variant}
+            rules={rules}
             aiDifficulty={aiDifficulty}
-            liveMarkCount={liveMarkCount}
             theme={theme}
             onThemeChange={setTheme}
             soundEnabled={soundEnabled}
             onSoundToggle={toggleSound}
             onSizeChange={handleSizeChange}
             onModeChange={setMode}
-            onVariantChange={handleVariantChange}
-            onLiveMarkCountChange={handleLiveMarkCountChange}
+            onRulesChange={handleRulesChange}
             onAiDifficultyChange={setAiDifficulty}
             onStart={handleStart}
           />
@@ -309,15 +305,15 @@ export default function App() {
                         : 'Hard'}
                   </span>
                 )}
-                {gameState.config.variant === 'misere' && (
+                {gameState.config.rules.misere && (
                   <span className="meta-badge misere">Misère</span>
                 )}
-                {gameState.config.variant === 'limited' && (
+                {gameState.config.rules.limited && (
                   <span className="meta-badge limited">
-                    Limited · K={gameState.config.liveMarkCount ?? getDefaultLiveMarkCount(gameState.config.size, gameState.config.winLength)}
+                    Limited · K={gameState.config.rules.liveMarkCount}
                   </span>
                 )}
-                {gameState.config.variant === 'gravity' && (
+                {gameState.config.rules.gravity && (
                   <span className="meta-badge gravity">Gravity</span>
                 )}
               </div>
@@ -339,7 +335,7 @@ export default function App() {
 
             <GameBoard
               board={gameState.board}
-              variant={gameState.config.variant}
+              gravity={gameState.config.rules.gravity}
               winningCells={gameState.winningCells}
               expiredCell={gameState.expiredCell}
               droppedCell={droppedCell}

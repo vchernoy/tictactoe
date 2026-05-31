@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { isColumnFull } from '../game/logic';
 import { Cell } from './Cell';
-import type { Board, GameVariant, Move } from '../game/types';
+import type { Board, Move } from '../game/types';
 
 interface BoardProps {
   board: Board;
-  variant: GameVariant;
+  gravity: boolean;
   winningCells: [number, number][];
   expiredCell: Move | null;
   droppedCell: Move | null;
@@ -27,7 +27,7 @@ function isDroppedCell(droppedCell: Move | null, row: number, col: number): bool
 
 export function GameBoard({
   board,
-  variant,
+  gravity,
   winningCells,
   expiredCell,
   droppedCell,
@@ -35,12 +35,11 @@ export function GameBoard({
   disabled,
 }: BoardProps) {
   const size = board.length;
-  const isGravity = variant === 'gravity';
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
 
   return (
     <div
-      className={`board ${isGravity ? 'board-gravity' : ''}`}
+      className={`board ${gravity ? 'board-gravity' : ''}`}
       style={{
         gridTemplateColumns: `repeat(${size}, 1fr)`,
         gridTemplateRows: `repeat(${size}, 1fr)`,
@@ -49,10 +48,10 @@ export function GameBoard({
     >
       {board.map((row, r) =>
         row.map((cell, c) => {
-          const columnFull = isGravity && isColumnFull(board, c);
-          const columnHovered = isGravity && hoveredCol === c && !columnFull;
+          const columnFull = gravity && isColumnFull(board, c);
+          const columnHovered = gravity && hoveredCol === c && !columnFull;
           const cellDisabled =
-            disabled || (isGravity ? columnFull : cell !== null);
+            disabled || (gravity ? columnFull : cell !== null);
 
           return (
             <Cell
@@ -63,7 +62,7 @@ export function GameBoard({
               isWinning={isWinningCell(winningCells, r, c)}
               isExpiring={isExpiredCell(expiredCell, r, c)}
               isDropping={isDroppedCell(droppedCell, r, c)}
-              isGravity={isGravity}
+              isGravity={gravity}
               isColumnHovered={columnHovered}
               isColumnFull={columnFull}
               onClick={onCellClick}

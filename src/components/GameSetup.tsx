@@ -3,27 +3,40 @@ import {
   getLiveMarkMin,
   getWinLength,
 } from '../game/logic';
-import type { AiDifficulty, GameMode, GameVariant } from '../game/types';
+import { createRulesFromPreset, detectPreset } from '../game/rules';
+import type { AiDifficulty, GameMode, GameRules, RulesPreset } from '../game/types';
 import { THEMES, type ThemeId } from '../themes';
 import { SoundToggle } from './SoundToggle';
 
 interface GameSetupProps {
   size: number;
   mode: GameMode;
-  variant: GameVariant;
+  rules: GameRules;
   aiDifficulty: AiDifficulty;
-  liveMarkCount: number;
   theme: ThemeId;
   onThemeChange: (theme: ThemeId) => void;
   soundEnabled: boolean;
   onSoundToggle: () => void;
   onSizeChange: (size: number) => void;
   onModeChange: (mode: GameMode) => void;
-  onVariantChange: (variant: GameVariant) => void;
+  onRulesChange: (rules: GameRules) => void;
   onAiDifficultyChange: (difficulty: AiDifficulty) => void;
-  onLiveMarkCountChange: (count: number) => void;
   onStart: () => void;
 }
+
+const PRESETS: { id: Exclude<RulesPreset, 'custom'>; name: string; desc: string }[] = [
+  { id: 'classic', name: 'Classic', desc: 'Standard N in a row' },
+  { id: 'misere', name: 'Misère', desc: 'Line completes = lose' },
+  { id: 'connect4', name: 'Connect-4', desc: 'Drop into columns' },
+  { id: 'limited', name: 'Limited', desc: 'K live marks each' },
+  { id: 'chaos', name: 'Chaos', desc: 'Misère + min K' },
+];
+
+const RULE_TOGGLES: { key: keyof Pick<GameRules, 'misere' | 'limited' | 'gravity'>; name: string; desc: string }[] = [
+  { key: 'misere', name: 'Misère', desc: 'Completing a line loses' },
+  { key: 'limited', name: 'Limited moves', desc: 'Only K marks on board' },
+  { key: 'gravity', name: 'Gravity', desc: 'Drop into columns' },
+];
 
 const DIFFICULTIES: { id: AiDifficulty; name: string; desc: string }[] = [
   { id: 'easy', name: 'Easy', desc: 'Mostly random, sometimes clever' },
@@ -73,46 +86,80 @@ function LiveMarkStepper({ value, min, max, onChange }: LiveMarkStepperProps) {
   );
 }
 
-function getWinHint(size: number, variant: GameVariant): string {
+function getWinHint(size: number, rules: GameRules): string {
   const n = size <= 4 ? size : 4;
-  if (variant === 'misere') {
+  const winPart =
+    size <= 4 ? `Win by getting ${n} in a row` : `Win by getting 4 in a row on a ${size}×${size} board`;
+
+  if (rules.misere) {
     return `Avoid ${n} in a row — whoever completes a line loses`;
   }
-  if (variant === 'limited') {
-    return size <= 4
-      ? `Win by getting ${size} in a row — marks expire after K moves`
-      : `Win by getting 4 in a row on a ${size}×${size} board — marks expire after K moves`;
+  if (rules.limited) {
+    return `${winPart} — marks expire after K moves`;
   }
-  if (variant === 'gravity') {
-    return size <= 4
-      ? `Drop marks into columns — ${size} in a row wins`
-      : `Drop marks into columns — 4 in a row wins on a ${size}×${size} board`;
+  if (rules.gravity) {
+    return `Drop marks into columns — ${n} in a row wins`;
   }
-  return size <= 4
-    ? `Win by getting ${size} in a row`
-    : `Win by getting 4 in a row on a ${size}×${size} board`;
+  return winPart;
+}
+
+function getRulesHint(rules: GameRules): string {
+  const parts: string[] = [];
+
+  if (rules.misere) {
+    parts.push('Misère: the player who completes N in a row loses.');
+  }
+  if (rules.limited) {
+    parts.push('Limited: each player keeps only their last K marks (win-before-expire applies).');
+  }
+  if (rules.gravity) {
+    parts.push('Gravity: pick a column — your mark drops to the bottom.');
+  }
+  if (rules.limited && rules.gravity) {
+    parts.push('When a mark expires in gravity mode, the cell empties without re-dropping marks above.');
+  }
+
+  if (parts.length === 0) {
+    return 'Classic: first player to get N in a row wins.';
+  }
+  return parts.join(' ');
 }
 
 export function GameSetup({
   size,
   mode,
-  variant,
+  rules,
   theme,
   onThemeChange,
   soundEnabled,
   onSoundToggle,
   onSizeChange,
   onModeChange,
-  onVariantChange,
+  onRulesChange,
   aiDifficulty,
   onAiDifficultyChange,
-  liveMarkCount,
-  onLiveMarkCountChange,
   onStart,
 }: GameSetupProps) {
   const winLength = getWinLength(size);
   const minK = getLiveMarkMin(size, winLength);
   const maxK = getLiveMarkMax(size);
+  const activePreset = detectPreset(rules, size, winLength);
+
+  const handlePresetSelect = (preset: Exclude<RulesPreset, 'custom'>) => {
+    onRulesChange(createRulesFromPreset(preset, size, winLength));
+  };
+
+  const handleToggle = (key: 'misere' | 'limited' | 'gravity') => {
+    const next = { ...rules, [key]: !rules[key] };
+    if (key === 'limited' && next.limited && !rules.limited) {
+      next.liveMarkCount = winLength;
+    }
+    onRulesChange(next);
+  };
+
+  const handleLiveMarkCountChange = (count: number) => {
+    onRulesChange({ ...rules, liveMarkCount: count });
+  };
 
   return (
     <div className="setup-panel">
@@ -190,59 +237,56 @@ export function GameSetup({
 
       <div className="setup-section">
         <label className="setup-label">Rules</label>
-        <div className="variant-toggle">
-          <button
-            type="button"
-            className={`variant-btn ${variant === 'standard' ? 'active' : ''}`}
-            onClick={() => onVariantChange('standard')}
-          >
-            <span className="variant-name">Standard</span>
-            <span className="variant-desc">N in a row wins</span>
-          </button>
-          <button
-            type="button"
-            className={`variant-btn ${variant === 'misere' ? 'active' : ''}`}
-            onClick={() => onVariantChange('misere')}
-          >
-            <span className="variant-name">Misère</span>
-            <span className="variant-desc">Completing a line loses</span>
-          </button>
-          <button
-            type="button"
-            className={`variant-btn ${variant === 'limited' ? 'active' : ''}`}
-            onClick={() => onVariantChange('limited')}
-          >
-            <span className="variant-name">Limited</span>
-            <span className="variant-desc">Only K marks on board</span>
-          </button>
-          <button
-            type="button"
-            className={`variant-btn ${variant === 'gravity' ? 'active' : ''}`}
-            onClick={() => onVariantChange('gravity')}
-          >
-            <span className="variant-name">Gravity</span>
-            <span className="variant-desc">Drop into columns</span>
-          </button>
+
+        <div className="preset-toggle">
+          {PRESETS.map(({ id, name, desc }) => (
+            <button
+              key={id}
+              type="button"
+              className={`preset-btn ${activePreset === id ? 'active' : ''}`}
+              onClick={() => handlePresetSelect(id)}
+            >
+              <span className="preset-name">{name}</span>
+              <span className="preset-desc">{desc}</span>
+            </button>
+          ))}
+          {activePreset === 'custom' && (
+            <div className="preset-custom-label" aria-live="polite">
+              <span className="preset-name">Custom</span>
+              <span className="preset-desc">Mix your own rules</span>
+            </div>
+          )}
         </div>
-        <p className="setup-hint variant-hint">
-          {variant === 'misere'
-            ? 'Misère: the player who gets N in a row loses. Draws still happen when the board fills with no line.'
-            : variant === 'limited'
-              ? 'Limited: standard N-in-a-row wins, but each player keeps only their last K marks. Misère rules do not apply in this mode.'
-              : variant === 'gravity'
-                ? 'Pick a column — your mark drops to the bottom. Standard N-in-a-row wins; full columns cannot be played.'
-                : 'Standard: first player to get N in a row wins.'}
-        </p>
+
+        <div className="rule-toggles">
+          {RULE_TOGGLES.map(({ key, name, desc }) => (
+            <button
+              key={key}
+              type="button"
+              className={`rule-toggle ${rules[key] ? 'active' : ''}`}
+              onClick={() => handleToggle(key)}
+              aria-pressed={rules[key]}
+            >
+              <span className="rule-toggle-check" aria-hidden="true">{rules[key] ? '✓' : ''}</span>
+              <span className="rule-toggle-text">
+                <span className="rule-toggle-name">{name}</span>
+                <span className="rule-toggle-desc">{desc}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <p className="setup-hint variant-hint">{getRulesHint(rules)}</p>
       </div>
 
-      {variant === 'limited' && (
+      {rules.limited && (
         <div className="setup-section">
           <label className="setup-label">Live Mark Count (K)</label>
           <LiveMarkStepper
-            value={liveMarkCount}
+            value={rules.liveMarkCount}
             min={minK}
             max={maxK}
-            onChange={onLiveMarkCountChange}
+            onChange={handleLiveMarkCountChange}
           />
           <p className="setup-hint">
             Each player keeps their last K marks (K = {minK} … {maxK}). Oldest disappears.
@@ -264,7 +308,7 @@ export function GameSetup({
             </button>
           ))}
         </div>
-        <p className="setup-hint">{getWinHint(size, variant)}</p>
+        <p className="setup-hint">{getWinHint(size, rules)}</p>
       </div>
 
       <button type="button" className="start-btn" onClick={onStart}>

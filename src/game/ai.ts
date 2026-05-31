@@ -7,13 +7,13 @@ function evaluateBoard(state: GameState, aiPlayer: Player): number {
   if (winner && winner !== 'draw') return -100;
   if (winner === 'draw') return 0;
 
-  const size = state.config.size;
+  const { rules } = config;
+  const size = config.size;
   const center = Math.floor(size / 2);
   let score = 0;
 
-  const variant = state.config.variant;
-  for (const { row, col } of getAvailableMoves(state.board, variant)) {
-    if (variant === 'gravity') {
+  for (const { row, col } of getAvailableMoves(state.board, rules)) {
+    if (rules.gravity) {
       score += (size - Math.abs(col - center)) * 0.15;
     } else {
       const dist = Math.abs(row - center) + Math.abs(col - center);
@@ -21,7 +21,7 @@ function evaluateBoard(state: GameState, aiPlayer: Player): number {
     }
   }
 
-  return config.variant === 'misere' ? -score : score;
+  return rules.misere ? -score : score;
 }
 
 function minimax(
@@ -32,7 +32,8 @@ function minimax(
   beta: number,
   maximizing: boolean,
 ): number {
-  const result = checkWinner(state.board, state.config.winLength, state.config.variant);
+  const { rules, winLength } = state.config;
+  const result = checkWinner(state.board, winLength, rules);
   if (result !== null) {
     if (result === aiPlayer) return 100 + depth;
     if (result === 'draw') return 0;
@@ -41,7 +42,7 @@ function minimax(
 
   if (depth === 0) return evaluateBoard(state, aiPlayer);
 
-  const moves = getAvailableMoves(state.board, state.config.variant);
+  const moves = getAvailableMoves(state.board, rules);
   if (maximizing) {
     let maxEval = -Infinity;
     for (const move of moves) {
@@ -64,7 +65,7 @@ function minimax(
 }
 
 function getMaxDepth(state: GameState): number {
-  const empty = getAvailableMoves(state.board, state.config.variant).length;
+  const empty = getAvailableMoves(state.board, state.config.rules).length;
   const { size } = state.config;
 
   if (size <= 3) return empty;
@@ -81,12 +82,12 @@ function getMediumDepth(state: GameState): number {
 }
 
 function filterLosingMoves(state: GameState, moves: Move[], aiPlayer: Player): Move[] {
-  const { winLength, variant } = state.config;
-  if (variant !== 'misere') return moves;
+  const { winLength, rules } = state.config;
+  if (!rules.misere) return moves;
 
   const safe = moves.filter((move) => {
     const next = applyMove(state, move);
-    const result = checkWinner(next.board, winLength, variant);
+    const result = checkWinner(next.board, winLength, rules);
     return result !== opponent(aiPlayer);
   });
 
@@ -94,27 +95,27 @@ function filterLosingMoves(state: GameState, moves: Move[], aiPlayer: Player): M
 }
 
 function prepareMoves(state: GameState, aiPlayer: Player): Move[] {
-  let moves = getAvailableMoves(state.board, state.config.variant);
+  const moves = getAvailableMoves(state.board, state.config.rules);
   if (moves.length === 0) return [];
   return filterLosingMoves(state, moves, aiPlayer);
 }
 
 function findWinningMove(state: GameState, moves: Move[], aiPlayer: Player): Move | null {
-  const { winLength, variant } = state.config;
+  const { winLength, rules } = state.config;
   for (const move of moves) {
     const next = applyMove({ ...state, currentPlayer: aiPlayer }, move);
-    if (checkWinner(next.board, winLength, variant) === aiPlayer) return move;
+    if (checkWinner(next.board, winLength, rules) === aiPlayer) return move;
   }
   return null;
 }
 
 function findBlockingMove(state: GameState, moves: Move[], aiPlayer: Player): Move | null {
-  const { winLength, variant } = state.config;
+  const { winLength, rules } = state.config;
   const human = opponent(aiPlayer);
 
-  for (const move of getAvailableMoves(state.board, variant)) {
+  for (const move of getAvailableMoves(state.board, rules)) {
     const next = applyMove({ ...state, currentPlayer: human }, move);
-    if (checkWinner(next.board, winLength, variant) === human && moves.some((m) => m.row === move.row && m.col === move.col)) {
+    if (checkWinner(next.board, winLength, rules) === human && moves.some((m) => m.row === move.row && m.col === move.col)) {
       return move;
     }
   }
@@ -130,7 +131,7 @@ function positionalScore(state: GameState, move: Move): number {
   const center = Math.floor(size / 2);
   const { row, col } = move;
 
-  if (state.config.variant === 'gravity') {
+  if (state.config.rules.gravity) {
     const colDist = Math.abs(col - center);
     if (colDist === 0) return 3;
     if (colDist === 1) return 2;
@@ -182,7 +183,7 @@ function pickMinimaxMove(state: GameState, moves: Move[], aiPlayer: Player, dept
 }
 
 function fallbackMove(state: GameState): Move {
-  const moves = getAvailableMoves(state.board, state.config.variant);
+  const moves = getAvailableMoves(state.board, state.config.rules);
   return moves[0] ?? { row: 0, col: 0 };
 }
 
@@ -219,25 +220,25 @@ function getComputerMoveMedium(state: GameState, aiPlayer: Player): Move {
 }
 
 function getComputerMoveHard(state: GameState, aiPlayer: Player): Move {
-  let moves = getAvailableMoves(state.board, state.config.variant);
+  const { winLength, rules } = state.config;
+  let moves = getAvailableMoves(state.board, rules);
   if (moves.length === 0) return fallbackMove(state);
 
-  const { winLength, variant } = state.config;
   moves = filterLosingMoves(state, moves, aiPlayer);
 
   for (const move of moves) {
     const next = applyMove(state, move);
-    const immediate = checkWinner(next.board, winLength, variant);
+    const immediate = checkWinner(next.board, winLength, rules);
     if (immediate === aiPlayer) return move;
   }
 
-  if (variant !== 'misere') {
+  if (!rules.misere) {
     for (const move of moves) {
       const testState = { ...state, currentPlayer: aiPlayer };
       const afterAi = applyMove(testState, move);
-      const humanWin = getAvailableMoves(afterAi.board, variant).some((m) => {
+      const humanWin = getAvailableMoves(afterAi.board, rules).some((m) => {
         const blocked = applyMove(afterAi, m);
-        return checkWinner(blocked.board, winLength, variant) === state.currentPlayer;
+        return checkWinner(blocked.board, winLength, rules) === state.currentPlayer;
       });
       if (humanWin) return move;
     }

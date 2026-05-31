@@ -2,17 +2,24 @@ export type Player = 'X' | 'O';
 export type CellValue = Player | null;
 export type Board = CellValue[][];
 export type GameMode = 'pvp' | 'pvc';
-export type GameVariant = 'standard' | 'misere' | 'limited' | 'gravity';
 export type GameStatus = 'setup' | 'playing' | 'finished';
 export type AiDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface GameRules {
+  misere: boolean;
+  limited: boolean;
+  liveMarkCount: number;
+  gravity: boolean;
+}
+
+export type RulesPreset = 'classic' | 'misere' | 'connect4' | 'limited' | 'chaos' | 'custom';
 
 export interface GameConfig {
   size: number;
   mode: GameMode;
   winLength: number;
-  variant: GameVariant;
+  rules: GameRules;
   aiDifficulty: AiDifficulty;
-  liveMarkCount?: number;
 }
 
 export interface GameState {
