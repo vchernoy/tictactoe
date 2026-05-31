@@ -46,7 +46,7 @@ Push to `main` (or run **Deploy to GitHub Pages** manually). The workflow runs `
 
 In **github.com/vchernoy/tictactoe → Settings → Pages → Build and deployment → Source**, choose **GitHub Actions** (not “Deploy from a branch”).
 
-If the live site shows `<script type="module" src="/src/main.tsx">`, Pages is still serving branch source instead of the workflow artifact — switch the source to **GitHub Actions** and re-run the deploy workflow.
+If the live site shows `<script type="module" src="/src/main.tsx">`, Pages is still serving the **main** branch (via the built-in `pages-build-deployment` Jekyll workflow) instead of the workflow artifact. In **Settings → Pages → Source**, choose **GitHub Actions** (not “Deploy from a branch → main”), then re-run **Deploy to GitHub Pages**. The deploy workflow verifies both URLs after each release.
 
 ## Tech Stack
 
